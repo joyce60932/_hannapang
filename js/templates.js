@@ -23,6 +23,9 @@
 
   function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
 
+  // 取內建插圖（assets.js），沒有就回空字串
+  function art(name) { return (global.ART && global.ART[name]) || ''; }
+
   // ================================================================
   //  模板 B：極簡白對比
   // ================================================================
@@ -221,14 +224,14 @@
         '從今天起，\n留一杯的錢，給未來的自己。\n\n' +
         '#龐玉涵 #幣圈媽媽 #複利的力量',
       cards: [
-        { id: uid(), type: 'cover', img: '', title: '一杯手搖飲的錢\n10 年能變成什麼？', price: '每天一杯 · NT$150', note: '從一杯，到一筆本金\n差別只在有沒有開始' },
-        { id: uid(), type: 'compare', leftImg: '', rightImg: '',
+        { id: uid(), type: 'cover', img: art('bubbleTea'), title: '一杯手搖飲的錢\n10 年能變成什麼？', price: '每天一杯 · NT$150', note: '從一杯，到一筆本金\n差別只在有沒有開始' },
+        { id: uid(), type: 'compare', leftImg: art('bubbleTea'), rightImg: art('coinGrowth'),
           leftLabel: '每天喝掉', leftPrice: 'NT$54,000／年', leftCap: '10 年後', leftBig: '0 元',
           rightLabel: '拿去投資', rightPrice: '年化 8%', rightCap: '10 年後', rightBig: '82 萬',
           note: '同一筆錢\n差了快 82 萬' },
-        { id: uid(), type: 'stat', img: '', kicker: 'A ｜每天喝掉', big: '0 元', label: '10 年後只剩習慣', note: '（和多出來的體重 😅）' },
-        { id: uid(), type: 'stat', img: '', kicker: 'B ｜存起來不投資', big: '54 萬', label: '10 年本金，但錢只是「不動」', note: '' },
-        { id: uid(), type: 'stat', img: '', kicker: 'C ｜拿去定期定額', big: '82 萬', label: '每月 4,500 × 年化 8% × 10 年', note: '（示意試算，投資有風險）' },
+        { id: uid(), type: 'stat', img: art('bubbleTea'), kicker: 'A ｜每天喝掉', big: '0 元', label: '10 年後只剩習慣', note: '（和多出來的體重 😅）' },
+        { id: uid(), type: 'stat', img: art('piggy'), kicker: 'B ｜存起來不投資', big: '54 萬', label: '10 年本金，但錢只是「不動」', note: '' },
+        { id: uid(), type: 'stat', img: art('coinGrowth'), kicker: 'C ｜拿去定期定額', big: '82 萬', label: '每月 4,500 × 年化 8% × 10 年', note: '（示意試算，投資有風險）' },
         { id: uid(), type: 'cta', title: '留一杯的錢\n給未來的自己', note: '我把每月定期定額紀錄更新在這裡\n想一起滾出下一個 10 年嗎？' },
       ],
     };
