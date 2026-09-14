@@ -95,4 +95,44 @@
   }
 
   global.cropPhoto = cropPhoto;
+
+  /**
+   * 極簡白模板用：把去背 PNG 等比縮到 maxDim 內、保留透明背景、輸出 PNG。
+   * 不裁切（產品/物件圖要完整），太大就再縮一級。
+   * @param {File|string} input
+   * @param {number} maxDim 最長邊上限（預設 1000）
+   * @returns {Promise<string>} data:image/png;base64,...
+   */
+  function fitPhoto(input, maxDim) {
+    if (maxDim == null) maxDim = 1000;
+    var srcPromise =
+      typeof input === 'string' ? Promise.resolve(input) : fileToDataURL(input);
+
+    return srcPromise.then(loadImage).then(function (im) {
+      function renderAt(dim) {
+        var W = im.naturalWidth, H = im.naturalHeight;
+        var scale = Math.min(1, dim / Math.max(W, H));
+        var w = Math.max(1, Math.round(W * scale));
+        var h = Math.max(1, Math.round(H * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.clearRect(0, 0, w, h);           // 保留透明
+        ctx.drawImage(im, 0, 0, w, h);
+        return canvas.toDataURL('image/png');
+      }
+      var dim = maxDim;
+      var out = renderAt(dim);
+      // PNG 無法調品質，太大就縮尺寸（上限 ~700KB）
+      while (dataURLBytes(out) / 1024 > 700 && dim > 500) {
+        dim -= 150;
+        out = renderAt(dim);
+      }
+      return out;
+    });
+  }
+
+  global.fitPhoto = fitPhoto;
 })(window);

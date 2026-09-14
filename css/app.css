@@ -39,6 +39,8 @@ body{
 .app-header .sub{font-size:12px;color:var(--muted)}
 .app-header .spacer{flex:1}
 .app-header .save-state{font-size:12px;color:var(--muted)}
+.tpl-pick{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.tpl-pick select{width:auto;padding:6px 10px;font-size:13px;color:var(--text)}
 
 /* ── 主要版面：左編輯 右預覽 ── */
 .layout{
@@ -152,6 +154,17 @@ textarea{resize:vertical; min-height:64px; line-height:1.7}
   display:flex;align-items:center;justify-content:center;
   color:var(--muted);font-size:11px;text-align:center;
 }
+/* 去背 PNG 縮圖：淺色棋盤底，看得出透明 */
+.photo-thumb.transparent{
+  background-color:#e9e7e2;background-size:contain;
+  background-image:
+    linear-gradient(45deg,#cfccc4 25%,transparent 25%),
+    linear-gradient(-45deg,#cfccc4 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#cfccc4 75%),
+    linear-gradient(-45deg,transparent 75%,#cfccc4 75%);
+  background-position:0 0,0 6px,6px -6px,-6px 0;
+  background-size:12px 12px;
+}
 .photo-actions{flex:1;display:flex;flex-direction:column;gap:6px}
 
 /* ── 卡片工具列 ── */
@@ -178,8 +191,8 @@ textarea{resize:vertical; min-height:64px; line-height:1.7}
 .stage-wrap{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
 .stage-box{position:relative;overflow:hidden;margin:0 auto;border-radius:2px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
 .stage{position:relative;width:1080px;height:1350px;transform-origin:top left}
-.stage .card{position:absolute;inset:0;display:none}
-.stage .card.on{display:block}
+.stage .slide{position:absolute;inset:0;display:none}
+.stage .slide.on{display:block}
 
 .pv-nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
 .dots{display:flex;gap:6px}

@@ -1,43 +1,42 @@
 /*
  * export.js
  * ------------------------------------------------------------------
- * 把目前的內容打包成一支「單一自足的 HTML」（規格 §12）：
+ * 把目前的內容打包成一支「單一自足的 HTML」（規格 §12），支援多模板：
+ *   - 依 state.template 取對應模板的 CSS 與 render()
  *   - 圖片 base64 內嵌、無任何外部路徑
  *   - 可預覽、可導覽、可下載 1080×1350 PNG、可複製 Caption
- *   - 卡片 HTML 直接用 renderCardHTML 預先產好烤進檔案（與預覽完全一致）
- *
- * 這支輸出的檔案就是「最終成品」，可以拿去用 Chrome / Safari 本機開啟。
  */
 (function (global) {
   'use strict';
 
-  function pad2(n) { return String(n).padStart(2, '0'); }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
 
   function buildStandaloneHTML(state) {
+    var tpl = global.TEMPLATES[state.template] || global.TEMPLATES.A;
     var settings = state.settings;
     var cards = state.cards;
     var total = cards.length;
+    var bg = tpl.bg || '#000';
 
     var stageInner = cards
-      .map(function (c, i) {
-        return global.renderCardHTML(c, i, total, settings, i === 0);
-      })
+      .map(function (c, i) { return tpl.render(c, i, total, settings, i === 0); })
       .join('\n');
 
     var dots = cards
-      .map(function (_, i) {
-        return '<div class="dot' + (i === 0 ? ' on' : '') + '"></div>';
-      })
+      .map(function (_, i) { return '<div class="dot' + (i === 0 ? ' on' : '') + '"></div>'; })
       .join('');
 
     var caption = state.caption || '';
-    var accountSafe = (settings.account || 'hanna').replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
+    var nameSeed = settings.account || settings.signature || 'hanna';
+    var fileSeed = String(nameSeed).replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
 
-    // 只在整個檔案裡出現一次的執行期腳本（導覽／縮放／下載／複製）
     var runtime =
-      "  var N = document.querySelectorAll('.card').length;\n" +
+      "  var N = document.querySelectorAll('.slide').length;\n" +
       "  var stage = document.getElementById('stage');\n" +
-      "  var cards = [].slice.call(document.querySelectorAll('.card'));\n" +
+      "  var cards = [].slice.call(document.querySelectorAll('.slide'));\n" +
       "  var dotsEl = [].slice.call(document.querySelectorAll('.dot'));\n" +
       "  var cur = 0;\n" +
       "  function show(i){ cur=(i+N)%N; cards.forEach(function(c,k){c.classList.toggle('on',k===cur);});\n" +
@@ -46,23 +45,23 @@
       "  document.getElementById('next').onclick=function(){show(cur+1);};\n" +
       "  addEventListener('keydown',function(e){ if(e.key==='ArrowLeft')show(cur-1); if(e.key==='ArrowRight')show(cur+1); });\n" +
       "  function fit(){ var s=Math.min((innerWidth-40)/1080,(innerHeight*0.72)/1350);\n" +
-      "    stage.style.transform='scale('+s+')'; stage.style.height=(1350*s)+'px'; }\n" +
+      "    stage.style.transform='scale('+s+')'; document.getElementById('box').style.width=(1080*s)+'px'; document.getElementById('box').style.height=(1350*s)+'px'; }\n" +
       "  addEventListener('resize',fit); fit();\n" +
       "  function dl(cardEl, name){\n" +
       "    return (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){\n" +
       "      var clone=cardEl.cloneNode(true);\n" +
       "      Object.assign(clone.style,{position:'fixed',left:'-9999px',top:'0',transform:'none',display:'block'});\n" +
       "      document.body.appendChild(clone);\n" +
-      "      return html2canvas(clone,{scale:1,backgroundColor:'#000',useCORS:true,logging:false}).then(function(canvas){\n" +
+      "      return html2canvas(clone,{scale:1,backgroundColor:" + JSON.stringify(bg) + ",useCORS:true,logging:false}).then(function(canvas){\n" +
       "        document.body.removeChild(clone);\n" +
       "        return new Promise(function(r){canvas.toBlob(function(b){var a=document.createElement('a');\n" +
       "          a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href);r();},'image/png');});\n" +
       "      });\n" +
       "    });\n" +
       "  }\n" +
-      "  document.getElementById('dlOne').onclick=function(){ dl(cards[cur],'" + accountSafe + "_'+String(cur+1).padStart(2,'0')+'.png'); };\n" +
+      "  document.getElementById('dlOne').onclick=function(){ dl(cards[cur],'" + fileSeed + "_'+String(cur+1).padStart(2,'0')+'.png'); };\n" +
       "  document.getElementById('dlAll').onclick=function(){ var p=Promise.resolve();\n" +
-      "    cards.forEach(function(c,i){ p=p.then(function(){return dl(c,'" + accountSafe + "_'+String(i+1).padStart(2,'0')+'.png');}); }); };\n" +
+      "    cards.forEach(function(c,i){ p=p.then(function(){return dl(c,'" + fileSeed + "_'+String(i+1).padStart(2,'0')+'.png');}); }); };\n" +
       "  var cap=document.getElementById('cap'); cap.textContent=CAPTION;\n" +
       "  document.getElementById('copyCap').onclick=function(){ navigator.clipboard.writeText(CAPTION).then(function(){\n" +
       "    var b=document.getElementById('copyCap'); b.textContent='已複製 ✓'; setTimeout(function(){b.textContent='複製整段 Caption';},1500); }); };\n";
@@ -71,16 +70,17 @@
 '<!DOCTYPE html>\n' +
 '<html lang="zh-Hant"><head>\n' +
 '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n' +
-'<title>' + esc(settings.seriesLabel || '輪播貼文') + '</title>\n' +
+'<title>' + esc(settings.seriesLabel || settings.headerLabel || '輪播貼文') + '</title>\n' +
 global.CARD_FONTS_LINK + '\n' +
 '<script src="' + global.HTML2CANVAS_SRC + '"><\/script>\n' +
 '<style>\n' +
 '*{margin:0;padding:0;box-sizing:border-box}\n' +
 "body{background:#111;color:#eee;font-family:'Noto Sans TC',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px}\n" +
-'.stage{position:relative;width:1080px;height:1350px;transform-origin:top center}\n' +
-'.card{position:absolute;inset:0;display:none}\n' +
-'.card.on{display:block}\n' +
-global.CARD_CSS + '\n' +
+'#box{position:relative;overflow:hidden;margin:0 auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}\n' +
+'.stage{position:relative;width:1080px;height:1350px;transform-origin:top left}\n' +
+'.slide{position:absolute;inset:0;display:none}\n' +
+'.slide.on{display:block}\n' +
+tpl.css + '\n' +
 '.nav{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}\n' +
 ".btn{font-family:'Noto Sans TC';font-size:15px;font-weight:500;color:#111;background:#f6dfa3;border:none;border-radius:999px;padding:11px 22px;cursor:pointer}\n" +
 '.ghost{background:transparent;color:#f6dfa3;border:1px solid rgba(246,223,163,.5)}\n' +
@@ -88,7 +88,7 @@ global.CARD_CSS + '\n' +
 '.note{max-width:560px;font-size:13px;line-height:1.7;color:#c9b98a;background:rgba(246,223,163,.08);border:1px solid rgba(246,223,163,.22);border-radius:12px;padding:12px 16px;text-align:center}\n' +
 '.cap{max-width:560px;width:100%;background:#1b1b1b;border-radius:12px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.7;color:#ddd}\n' +
 '</style></head><body>\n' +
-'  <div class="stage" id="stage">\n' + stageInner + '\n  </div>\n' +
+'  <div id="box"><div class="stage" id="stage">\n' + stageInner + '\n  </div></div>\n' +
 '  <div class="nav">\n' +
 '    <button class="btn ghost" id="prev">◀</button>\n' +
 '    <div class="dots" id="dots">' + dots + '</div>\n' +
@@ -106,13 +106,6 @@ global.CARD_CSS + '\n' +
 runtime +
 '<\/script></body></html>'
     );
-  }
-
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
   }
 
   global.buildStandaloneHTML = buildStandaloneHTML;

@@ -1,119 +1,66 @@
 /*
- * app.js — 製作器主程式
+ * app.js — 製作器主程式（多模板）
  * ------------------------------------------------------------------
- * 狀態管理 + 編輯介面 + 即時預覽 + 下載 PNG + 匯出獨立 HTML。
- * 卡片視覺來自 card-style.js / render.js，這裡只負責操作與資料。
+ * 依 templates.js 的註冊表運作：全域設定、卡片欄位、預覽、下載都由模板 schema 驅動。
+ * 每套模板各自存一份內容（切換不會互相覆蓋）。
  */
 (function () {
   'use strict';
 
-  var STORE_KEY = 'hanna_carousel_v2';
+  var STORE_PREFIX = 'hanna_carousel_v3_';   // 每模板一份：..._A / ..._B
+  var ACTIVE_KEY = 'hanna_active_v3';
 
-  // 把卡片設計系統 CSS 注入頁面，讓預覽與匯出長得一致
-  (function injectCardCSS() {
-    var style = document.createElement('style');
-    style.textContent = window.CARD_CSS;
-    document.head.appendChild(style);
-  })();
+  var HINTS = {
+    A: '滿版真人照 + 鵝黃金字，文字沉左下。標題想讓關鍵字變<b>鵝黃</b>，用星號包住：<b>10 年喝掉 *54 萬*</b>。上傳照片會自動裁成 1080×1350。',
+    B: '白底 + 去背產品圖 + 大數字（機會成本／對比）。上傳<b>去背 PNG</b>（透明背景）效果最好。「對比 VS」頁左右各放一張圖與大數字；文字可換行。',
+  };
 
-  // ── 預設內容（第一次開啟時的範例，之後可整段替換）──
-  //    目前內容：〈每天一杯手搖飲，10 年喝掉多少？〉機會成本 × 複利
-  function defaultState() {
-    return {
-      settings: {
-        seriesLabel: '幣圈媽媽 ✦',
-        account: '@_hannapang',
-        hashtag: '#複利的力量',
-      },
-      caption:
-        '我不是要你什麼都別買，\n而是想讓你看見——\n那杯「才 150 元」的飲料，\n10 年後，其實是 80 幾萬。\n\n' +
-        '小錢不是小事，\n它只是還沒被你看見的複利。\n\n' +
-        '從今天起，\n留一杯的錢，給未來的自己。\n\n' +
-        '#龐玉涵 #幣圈媽媽 #複利的力量',
-      cards: [
-        // 1 封面｜破題
-        {
-          id: uid(), type: 'cover', anchor: '每天一杯手搖飲',
-          head: '10 年，喝掉 *54 萬* 😱', body: '',
-          close: '你少賺的，比這更多… →', credit: '', img: '',
-        },
-        // 2 內頁｜情緒提問
-        {
-          id: uid(), type: 'inner', anchor: '才 150 元',
-          head: '真正讓你*存不到錢*的',
-          body: '一天才 150 元，你從來沒把它加起來過。\n讓你存不到錢的，從來不是大筆花費，而是那些「才 150 元」的小確幸。',
-          close: '小錢，才是關鍵', credit: '', img: '',
-        },
-        // 3 內頁｜A 每天喝掉
-        {
-          id: uid(), type: 'inner', anchor: 'A ｜每天喝掉',
-          head: '10 年後，剩 *0 元*',
-          body: '💰 一天一杯約 150 元\n一個月：約 4,500 元\n一年：約 54,000 元\n10 年後：0 元',
-          close: '只剩習慣（和體重 😅）', credit: '', img: '',
-        },
-        // 4 內頁｜B 存起來不投資
-        {
-          id: uid(), type: 'inner', anchor: 'B ｜存起來',
-          head: '10 年存下 *54 萬*',
-          body: '💰 一天少喝一杯，把錢存下來\n每月存 4,500 元\n10 年本金：540,000 元',
-          close: '有存到，但錢只是「不動」', credit: '', img: '',
-        },
-        // 5 內頁｜C 定期定額（揭曉）
-        {
-          id: uid(), type: 'inner', anchor: 'C ｜拿去投資',
-          head: '10 年滾出 *82 萬*',
-          body: '💰 每月 4,500 元，假設年化 8%\n投入本金：540,000 元\n10 年後約：820,000 元\n（示意試算，投資有風險）',
-          close: '同一杯的錢，多滾出 28 萬', credit: '', img: '',
-        },
-        // 6 內頁｜我的選擇
-        {
-          id: uid(), type: 'inner', anchor: '我的選擇',
-          head: '把其中*一杯*，換成未來',
-          body: '我沒有戒掉所有小確幸，只是把「其中一杯」，換成投資未來的自己。\n① 每天一杯的錢 → 每月定期定額\n② 不痛不癢，卻能滾 10 年。',
-          close: '差距，都是從「一杯」開始', credit: '', img: '',
-        },
-        // 7 CTA｜透明追蹤
-        {
-          id: uid(), type: 'cta', anchor: '換你了',
-          head: '留一杯的錢，給*未來的自己*',
-          body: '我把每個月的定期定額紀錄，都更新在這裡。\n想一起滾出下一個 10 年嗎？',
-          close: '追蹤我，一起記錄 →', credit: '', img: '',
-        },
-      ],
-    };
-  }
+  // 把模板 CSS 注入頁面（切換時替換）
+  var tplStyle = document.createElement('style');
+  document.head.appendChild(tplStyle);
 
-  function uid() {
-    return 'c' + Math.random().toString(36).slice(2, 9);
-  }
+  // ── 狀態 ──
+  var activeTemplate = loadActive();
+  var state = loadState(activeTemplate) || window.TEMPLATES[activeTemplate].defaultState();
+  var cur = 0;
+  var openId = state.cards[0] && state.cards[0].id;
 
-  // ── 讀取 / 儲存 ──
-  var state = load() || defaultState();
-  var cur = 0;                 // 目前預覽的卡片 index
-  var openId = state.cards[0] && state.cards[0].id;  // 目前展開的編輯卡
+  function tpl() { return window.TEMPLATES[state.template]; }
 
-  function load() {
+  function loadActive() {
     try {
-      var raw = localStorage.getItem(STORE_KEY);
-      return raw ? JSON.parse(raw) : null;
+      var a = localStorage.getItem(ACTIVE_KEY);
+      return (a && window.TEMPLATES[a]) ? a : 'A';
+    } catch (e) { return 'A'; }
+  }
+  function saveActive() {
+    try { localStorage.setItem(ACTIVE_KEY, activeTemplate); } catch (e) {}
+  }
+  function loadState(t) {
+    try {
+      var raw = localStorage.getItem(STORE_PREFIX + t);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      s.template = t;
+      return s;
     } catch (e) { return null; }
   }
-
   function save() {
-    var el = document.getElementById('saveState');
+    var el = $('saveState');
     try {
-      localStorage.setItem(STORE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORE_PREFIX + state.template, JSON.stringify(state));
       el.textContent = '已自動儲存';
     } catch (e) {
-      // 圖片太多會超過 localStorage 容量 → 退而只存文字
       try {
         var stripped = JSON.parse(JSON.stringify(state));
-        stripped.cards.forEach(function (c) { c.img = ''; });
-        localStorage.setItem(STORE_KEY, JSON.stringify(stripped));
+        stripped.cards.forEach(function (c) {
+          Object.keys(c).forEach(function (k) {
+            if (typeof c[k] === 'string' && c[k].indexOf('data:image') === 0) c[k] = '';
+          });
+        });
+        localStorage.setItem(STORE_PREFIX + state.template, JSON.stringify(stripped));
         el.textContent = '已存文字（照片過大未存，請盡快匯出）';
-      } catch (e2) {
-        el.textContent = '無法自動儲存';
-      }
+      } catch (e2) { el.textContent = '無法自動儲存'; }
     }
   }
 
@@ -132,134 +79,137 @@
   var toastTimer;
   function toast(msg) {
     var t = $('toast');
-    t.textContent = msg;
-    t.classList.add('on');
+    t.textContent = msg; t.classList.add('on');
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function () { t.classList.remove('on'); }, 1800);
   }
 
-  var KIND_LABEL = { cover: '封面', inner: '內頁', cta: 'CTA' };
+  // ================================================================
+  //  模板切換
+  // ================================================================
+  function buildTemplateSelect() {
+    var sel = $('tplSelect');
+    sel.innerHTML = '';
+    window.TEMPLATE_ORDER.forEach(function (id) {
+      var o = el('<option value="' + id + '">' + esc(window.TEMPLATES[id].name) + '</option>');
+      sel.appendChild(o);
+    });
+    sel.value = activeTemplate;
+    sel.addEventListener('change', function () {
+      switchTemplate(sel.value);
+    });
+  }
+
+  function switchTemplate(t) {
+    if (t === state.template) return;
+    save();                                  // 存目前模板
+    activeTemplate = t;
+    saveActive();
+    state = loadState(t) || window.TEMPLATES[t].defaultState();
+    cur = 0;
+    openId = state.cards[0] && state.cards[0].id;
+    buildAll();
+    toast('已切換到「' + window.TEMPLATES[t].name + '」');
+  }
 
   // ================================================================
   //  編輯區
   // ================================================================
   function buildEditor() {
-    // 全域設定
-    $('setSeries').value = state.settings.seriesLabel;
-    $('setAccount').value = state.settings.account;
-    $('setHashtag').value = state.settings.hashtag;
-    $('setCaption').value = state.caption;
+    $('hintBlock').innerHTML = HINTS[state.template] || '';
 
+    // 全域設定
+    var sf = $('settingsFields');
+    sf.innerHTML = '';
+    tpl().settingsSchema.forEach(function (spec) {
+      sf.appendChild(settingsField(spec));
+    });
+
+    // Caption
+    $('setCaption').value = state.caption || '';
+
+    // 新增卡片按鈕（依模板型態）
+    var ab = $('addButtons');
+    ab.innerHTML = '';
+    tpl().types.forEach(function (ty) {
+      if (ty.id === 'cover') return;   // 封面通常只有一張，不放快速新增
+      var b = el('<button class="btn ghost sm">＋ ' + esc(ty.label) + '</button>');
+      b.addEventListener('click', function () {
+        var c = tpl().newCard(ty.id);
+        state.cards.push(c);
+        openId = c.id; cur = state.cards.length - 1;
+        onStructureChange();
+      });
+      ab.appendChild(b);
+    });
+
+    // 卡片列表
     var list = $('cardList');
     list.innerHTML = '';
-    state.cards.forEach(function (card, i) {
-      list.appendChild(buildCardItem(card, i));
-    });
+    state.cards.forEach(function (card, i) { list.appendChild(buildCardItem(card, i)); });
   }
 
-  function titlePreview(card) {
-    var t = (card.anchor || '') + ' ' + (card.head || '');
-    t = t.replace(/\*/g, '').replace(/\n/g, ' ').trim();
-    return t || '（空白）';
+  function settingsField(spec) {
+    var f = el('<div class="field"><label>' + esc(spec.label) + '</label></div>');
+    var input = el('<input type="text">');
+    input.value = (state.settings[spec.key] != null) ? state.settings[spec.key] : '';
+    input.addEventListener('input', function () {
+      state.settings[spec.key] = input.value;
+      buildPreview(); save();
+    });
+    f.appendChild(input);
+    return f;
   }
 
   function buildCardItem(card, i) {
     var total = state.cards.length;
-    var kindCls = card.type === 'cover' ? '' : 'inner';
     var isOpen = card.id === openId;
+    var typeLabel = (function () {
+      var ty = tpl().types.filter(function (t) { return t.id === card.type; })[0];
+      return ty ? ty.label : card.type;
+    })();
+    var kindCls = card.type === 'cover' ? '' : 'inner';
 
-    var item = el(
-      '<div class="card-item ' + (isOpen ? 'open ' : '') + (i === cur ? 'active' : '') + '"></div>'
-    );
+    var item = el('<div class="card-item ' + (isOpen ? 'open ' : '') + (i === cur ? 'active' : '') + '"></div>');
 
-    // 標頭
     var head = el(
       '<div class="card-head">' +
         '<span class="idx">' + (i + 1) + '</span>' +
-        '<span class="kind ' + kindCls + '">' + KIND_LABEL[card.type] + '</span>' +
-        '<span class="title-preview">' + esc(titlePreview(card)) + '</span>' +
+        '<span class="kind ' + kindCls + '">' + esc(typeLabel) + '</span>' +
+        '<span class="title-preview">' + esc(tpl().titlePreview(card) || '（空白）') + '</span>' +
         '<span class="chevron">▶</span>' +
       '</div>'
     );
     head.addEventListener('click', function () {
       openId = (openId === card.id) ? null : card.id;
-      cur = i;
-      buildEditor();
-      buildPreview();
+      cur = i; buildEditor(); buildPreview();
     });
     item.appendChild(head);
 
-    // 內容
     var body = el('<div class="card-body"></div>');
 
     // 類型
-    var fType = el(
-      '<div class="field"><label>類型</label>' +
-        '<select>' +
-          '<option value="cover">封面（上→下漸層，字沉左下）</option>' +
-          '<option value="inner">內頁（整片均勻遮罩，字沉左下）</option>' +
-          '<option value="cta">CTA（均勻遮罩，收尾置中）</option>' +
-        '</select></div>'
-    );
+    var fType = el('<div class="field"><label>類型</label><select></select></div>');
     var sel = fType.querySelector('select');
+    tpl().types.forEach(function (ty) {
+      sel.appendChild(el('<option value="' + ty.id + '">' + esc(ty.label) + '</option>'));
+    });
     sel.value = card.type;
     sel.addEventListener('change', function () {
+      var d = tpl().newCard(sel.value);
+      Object.keys(d).forEach(function (k) {
+        if (k !== 'id' && k !== 'type' && !(k in card)) card[k] = d[k];
+      });
       card.type = sel.value;
       onStructureChange();
     });
     body.appendChild(fType);
 
-    // 照片
-    var thumb = el(
-      '<div class="photo-thumb">' + (card.img ? '' : '未放照片') + '</div>'
-    );
-    if (card.img) thumb.style.backgroundImage = 'url(' + card.img + ')';
-    var slot = el('<div class="photo-slot"></div>');
-    var actions = el('<div class="photo-actions"></div>');
-    var fileBtn = el(
-      '<label class="btn ghost sm btn-file">' + (card.img ? '更換照片' : '上傳照片') +
-        '<input type="file" accept="image/*"></label>'
-    );
-    var fileInput = fileBtn.querySelector('input');
-    fileInput.addEventListener('change', function () {
-      var f = fileInput.files && fileInput.files[0];
-      if (!f) return;
-      thumb.textContent = '處理中…';
-      window.cropPhoto(f, 0.10).then(function (dataURL) {
-        card.img = dataURL;
-        thumb.textContent = '';
-        thumb.style.backgroundImage = 'url(' + dataURL + ')';
-        fileBtn.firstChild.textContent = '更換照片';
-        buildPreview();
-        save();
-        toast('照片已裁成 1080×1350');
-      }).catch(function () {
-        thumb.textContent = '失敗';
-        toast('照片處理失敗');
-      });
-      fileInput.value = '';
+    // 欄位（依模板 schema）
+    tpl().fields(card.type).forEach(function (spec) {
+      if (spec.kind === 'image') body.appendChild(imageField(card, spec));
+      else body.appendChild(textField(card, spec));
     });
-    actions.appendChild(fileBtn);
-    if (card.img) {
-      var rm = el('<button class="btn danger sm">移除照片</button>');
-      rm.addEventListener('click', function () {
-        card.img = '';
-        buildEditor();
-        buildPreview();
-        save();
-      });
-      actions.appendChild(rm);
-    }
-    slot.appendChild(thumb);
-    slot.appendChild(actions);
-    body.appendChild(slot);
-
-    // 文字欄位
-    body.appendChild(textField(card, 'anchor', '錨點（歌名／主題詞）', 'input'));
-    body.appendChild(textField(card, 'head', '標題（關鍵字用 *星號* 包 → 變鵝黃）', 'input'));
-    body.appendChild(textField(card, 'body', '內文（可換行；建議寫成連續段落）', 'textarea'));
-    body.appendChild(textField(card, 'close', '收尾句', 'input'));
-    body.appendChild(textField(card, 'credit', 'Photo credit（非本人照才填，可留空）', 'input'));
 
     // 工具列
     var tools = el('<div class="card-tools"></div>');
@@ -276,64 +226,92 @@
       if (cur >= state.cards.length) cur = state.cards.length - 1;
       onStructureChange();
     });
-    tools.appendChild(up);
-    tools.appendChild(down);
-    tools.appendChild(del);
+    tools.appendChild(up); tools.appendChild(down); tools.appendChild(del);
     body.appendChild(tools);
 
     item.appendChild(body);
     return item;
   }
 
-  // 一個文字欄位，input 事件即時更新 state + 預覽（不重建編輯區，保留焦點）
-  function textField(card, key, label, kind) {
-    var f = el('<div class="field"><label>' + esc(label) + '</label></div>');
-    var input =
-      kind === 'textarea'
-        ? el('<textarea rows="3"></textarea>')
-        : el('<input type="text">');
-    input.value = card[key] || '';
+  function textField(card, spec) {
+    var f = el('<div class="field"><label>' + esc(spec.label) + '</label></div>');
+    var input = spec.kind === 'textarea'
+      ? el('<textarea rows="3"></textarea>')
+      : el('<input type="text">');
+    input.value = card[spec.key] || '';
     input.addEventListener('input', function () {
-      card[key] = input.value;
+      card[spec.key] = input.value;
       buildPreview();
-      // 更新此卡標頭的預覽字
       var itemHead = input.closest('.card-item').querySelector('.title-preview');
-      if (itemHead) itemHead.textContent = titlePreview(card);
+      if (itemHead) itemHead.textContent = tpl().titlePreview(card) || '（空白）';
       save();
     });
     f.appendChild(input);
     return f;
   }
 
+  function imageField(card, spec) {
+    var f = el('<div class="field"><label>' + esc(spec.label) + '</label></div>');
+    var slot = el('<div class="photo-slot"></div>');
+    var thumb = el('<div class="photo-thumb' + (spec.imageMode === 'transparent' ? ' transparent' : '') + '">' + (card[spec.key] ? '' : '未放') + '</div>');
+    if (card[spec.key]) {
+      thumb.style.backgroundImage = 'url(' + card[spec.key] + ')';
+      thumb.style.backgroundSize = spec.imageMode === 'transparent' ? 'contain' : 'cover';
+      thumb.style.backgroundRepeat = 'no-repeat';
+      thumb.style.backgroundPosition = 'center';
+    }
+    var actions = el('<div class="photo-actions"></div>');
+    var fileBtn = el('<label class="btn ghost sm btn-file">' + (card[spec.key] ? '更換' : '上傳') + '<input type="file" accept="image/*"></label>');
+    var fileInput = fileBtn.querySelector('input');
+    fileInput.addEventListener('change', function () {
+      var fl = fileInput.files && fileInput.files[0];
+      if (!fl) return;
+      thumb.textContent = '處理中…';
+      var job = spec.imageMode === 'transparent'
+        ? window.fitPhoto(fl, 1000)
+        : window.cropPhoto(fl, 0.10);
+      job.then(function (dataURL) {
+        card[spec.key] = dataURL;
+        buildEditor(); buildPreview(); save();
+        toast(spec.imageMode === 'transparent' ? '去背圖已放入' : '照片已裁成 1080×1350');
+      }).catch(function () { thumb.textContent = '失敗'; toast('圖片處理失敗'); });
+      fileInput.value = '';
+    });
+    actions.appendChild(fileBtn);
+    if (card[spec.key]) {
+      var rm = el('<button class="btn danger sm">移除</button>');
+      rm.addEventListener('click', function () {
+        card[spec.key] = ''; buildEditor(); buildPreview(); save();
+      });
+      actions.appendChild(rm);
+    }
+    slot.appendChild(thumb); slot.appendChild(actions);
+    f.appendChild(slot);
+    return f;
+  }
+
   function moveCard(i, dir) {
     var j = i + dir;
     if (j < 0 || j >= state.cards.length) return;
-    var tmp = state.cards[i];
-    state.cards[i] = state.cards[j];
-    state.cards[j] = tmp;
-    cur = j;
-    onStructureChange();
+    var tmp = state.cards[i]; state.cards[i] = state.cards[j]; state.cards[j] = tmp;
+    cur = j; onStructureChange();
   }
 
-  function onStructureChange() {
-    buildEditor();
-    buildPreview();
-    save();
-  }
+  function onStructureChange() { buildEditor(); buildPreview(); save(); }
 
   // ================================================================
   //  預覽區
   // ================================================================
   function buildPreview() {
+    tplStyle.textContent = tpl().css;
+
     var total = state.cards.length;
     if (cur >= total) cur = total - 1;
     if (cur < 0) cur = 0;
 
     var stage = $('stage');
     stage.innerHTML = state.cards
-      .map(function (c, i) {
-        return window.renderCardHTML(c, i, total, state.settings, i === cur);
-      })
+      .map(function (c, i) { return tpl().render(c, i, total, state.settings, i === cur); })
       .join('');
 
     var dots = $('dots');
@@ -344,26 +322,21 @@
       dots.appendChild(d);
     });
 
-    updateCaptionPreview();
+    $('capPreview').textContent = state.caption || '';
     fit();
   }
 
   function showCard(i) {
     var total = state.cards.length;
     cur = (i + total) % total;
-    var cards = document.querySelectorAll('#stage .card');
-    var dots = document.querySelectorAll('#dots .dot');
-    cards.forEach(function (c, k) { c.classList.toggle('on', k === cur); });
-    dots.forEach(function (d, k) { d.classList.toggle('on', k === cur); });
-    // 同步編輯區的 active 標示
-    var items = document.querySelectorAll('#cardList .card-item');
-    items.forEach(function (it, k) { it.classList.toggle('active', k === cur); });
+    document.querySelectorAll('#stage .slide').forEach(function (c, k) { c.classList.toggle('on', k === cur); });
+    document.querySelectorAll('#dots .dot').forEach(function (d, k) { d.classList.toggle('on', k === cur); });
+    document.querySelectorAll('#cardList .card-item').forEach(function (it, k) { it.classList.toggle('active', k === cur); });
   }
 
   function fit() {
     var wrap = document.querySelector('.stage-wrap');
-    var box = $('stageBox');
-    var stage = $('stage');
+    var box = $('stageBox'), stage = $('stage');
     var avail = Math.min(wrap.clientWidth, 560);
     var s = Math.min(avail / 1080, (window.innerHeight * 0.66) / 1350);
     stage.style.transform = 'scale(' + s + ')';
@@ -372,103 +345,61 @@
   }
   window.addEventListener('resize', fit);
 
-  // ── Caption ──
-  function fullCaption() {
-    return state.caption || '';
-  }
-  function updateCaptionPreview() {
-    $('capPreview').textContent = fullCaption();
-  }
-
   // ================================================================
-  //  下載 PNG（html2canvas，規格 §8）
+  //  下載 PNG
   // ================================================================
   function downloadCard(index) {
-    var cardEl = document.querySelectorAll('#stage .card')[index];
+    var cardEl = document.querySelectorAll('#stage .slide')[index];
     if (!cardEl) return Promise.resolve();
-    var accountSafe = (state.settings.account || 'hanna').replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
-    var name = accountSafe + '_' + String(index + 1).padStart(2, '0') + '.png';
+    var seed = (state.settings.account || state.settings.signature || 'hanna').replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
+    var name = seed + '_' + String(index + 1).padStart(2, '0') + '.png';
+    var bg = tpl().bg || '#000';
     var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
     return ready.then(function () {
       var clone = cardEl.cloneNode(true);
-      Object.assign(clone.style, {
-        position: 'fixed', left: '-9999px', top: '0', transform: 'none', display: 'block',
-      });
+      Object.assign(clone.style, { position: 'fixed', left: '-9999px', top: '0', transform: 'none', display: 'block' });
       document.body.appendChild(clone);
-      return window.html2canvas(clone, {
-        scale: 1, backgroundColor: '#000', useCORS: true, logging: false,
-      }).then(function (canvas) {
-        document.body.removeChild(clone);
-        return new Promise(function (res) {
-          canvas.toBlob(function (b) {
-            var a = document.createElement('a');
-            a.href = URL.createObjectURL(b);
-            a.download = name;
-            a.click();
-            URL.revokeObjectURL(a.href);
-            res();
-          }, 'image/png');
+      return window.html2canvas(clone, { scale: 1, backgroundColor: bg, useCORS: true, logging: false })
+        .then(function (canvas) {
+          document.body.removeChild(clone);
+          return new Promise(function (res) {
+            canvas.toBlob(function (b) {
+              var a = document.createElement('a');
+              a.href = URL.createObjectURL(b); a.download = name; a.click();
+              URL.revokeObjectURL(a.href); res();
+            }, 'image/png');
+          });
         });
-      });
     });
   }
 
-  // ================================================================
-  //  匯出獨立 HTML
-  // ================================================================
   function exportHTML() {
     var html = window.buildStandaloneHTML(state);
+    var seed = (state.settings.account || state.settings.signature || 'hanna').replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
     var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
     var a = document.createElement('a');
-    var accountSafe = (state.settings.account || 'hanna').replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
     a.href = URL.createObjectURL(blob);
-    a.download = accountSafe + '_carousel.html';
+    a.download = seed + '_' + state.template + '_carousel.html';
     a.click();
     URL.revokeObjectURL(a.href);
     toast('已匯出獨立 HTML');
   }
 
   // ================================================================
-  //  事件綁定
+  //  事件
   // ================================================================
   function bind() {
-    $('setSeries').addEventListener('input', function () {
-      state.settings.seriesLabel = this.value; buildPreview(); save();
-    });
-    $('setAccount').addEventListener('input', function () {
-      state.settings.account = this.value; buildPreview(); save();
-    });
-    $('setHashtag').addEventListener('input', function () {
-      state.settings.hashtag = this.value; save();
-    });
     $('setCaption').addEventListener('input', function () {
-      state.caption = this.value; updateCaptionPreview(); save();
+      state.caption = this.value; $('capPreview').textContent = this.value; save();
     });
     $('btnFillHashtag').addEventListener('click', function () {
       var tag = (state.settings.hashtag || '').trim();
       if (!tag) { toast('先在全域設定填主題 Hashtag'); return; }
-      var cap = state.caption.replace(/\s*$/, '');
-      // 若末行已是同一個 tag 就不重複加
+      var cap = (state.caption || '').replace(/\s*$/, '');
       if (!new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$').test(cap)) {
         cap += '\n\n' + tag;
       }
-      state.caption = cap;
-      $('setCaption').value = cap;
-      updateCaptionPreview();
-      save();
-    });
-
-    $('btnAddInner').addEventListener('click', function () {
-      var c = { id: uid(), type: 'inner', anchor: '', head: '', body: '', close: '', credit: '', img: '' };
-      state.cards.push(c);
-      openId = c.id; cur = state.cards.length - 1;
-      onStructureChange();
-    });
-    $('btnAddCta').addEventListener('click', function () {
-      var c = { id: uid(), type: 'cta', anchor: '', head: '', body: '', close: '', credit: '', img: '' };
-      state.cards.push(c);
-      openId = c.id; cur = state.cards.length - 1;
-      onStructureChange();
+      state.caption = cap; $('setCaption').value = cap; $('capPreview').textContent = cap; save();
     });
 
     $('pvPrev').addEventListener('click', function () { showCard(cur - 1); });
@@ -479,44 +410,33 @@
       if (e.key === 'ArrowRight') showCard(cur + 1);
     });
 
-    $('dlOne').addEventListener('click', function () {
-      toast('產生 PNG 中…');
-      downloadCard(cur);
-    });
+    $('dlOne').addEventListener('click', function () { toast('產生 PNG 中…'); downloadCard(cur); });
     $('dlAll').addEventListener('click', function () {
       toast('產生全部 PNG 中…');
       var p = Promise.resolve();
-      state.cards.forEach(function (_, i) {
-        p = p.then(function () { return downloadCard(i); });
-      });
+      state.cards.forEach(function (_, i) { p = p.then(function () { return downloadCard(i); }); });
     });
     $('copyCap').addEventListener('click', function () {
-      navigator.clipboard.writeText(fullCaption()).then(function () {
-        toast('Caption 已複製');
-      }, function () {
-        toast('複製失敗，請手動選取');
-      });
+      navigator.clipboard.writeText(state.caption || '').then(
+        function () { toast('Caption 已複製'); },
+        function () { toast('複製失敗，請手動選取'); }
+      );
     });
 
     $('btnExport').addEventListener('click', exportHTML);
     $('btnReset').addEventListener('click', function () {
-      if (!confirm('確定要清空所有內容、恢復預設範例嗎？')) return;
-      state = defaultState();
-      cur = 0;
-      openId = state.cards[0].id;
-      buildEditor();
-      buildPreview();
-      save();
-      toast('已重設');
+      if (!confirm('確定要清空「' + tpl().name + '」的內容、恢復預設範例嗎？')) return;
+      state = window.TEMPLATES[state.template].defaultState();
+      cur = 0; openId = state.cards[0].id;
+      buildAll(); toast('已重設此模板');
     });
   }
 
+  function buildAll() { buildEditor(); buildPreview(); }
+
   // ── 啟動 ──
-  buildEditor();
-  buildPreview();
+  buildTemplateSelect();
+  buildAll();
   bind();
-  // 字型載入後重畫一次，避免預覽字寬跑掉
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(fit);
-  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
 })();

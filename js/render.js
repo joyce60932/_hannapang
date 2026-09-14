@@ -58,7 +58,8 @@
   function renderCardHTML(card, index, total, settings, active) {
     var type = card.type || 'inner';
     var cls =
-      type === 'cover' ? 'cover' : type === 'cta' ? 'inner cta' : 'inner';
+      'slide ' +
+      (type === 'cover' ? 'cover' : type === 'cta' ? 'inner cta' : 'inner');
     if (active) cls += ' on';
 
     var num = pad2(index + 1) + '｜' + pad2(total);
