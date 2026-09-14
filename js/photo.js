@@ -135,4 +135,83 @@
   }
 
   global.fitPhoto = fitPhoto;
+
+  /**
+   * 一鍵去背（適合「單色/白底」商品照）。
+   * 從四邊往內 flood fill，把與背景色相近、且和邊緣相連的像素設為透明，
+   * 主體內部的白色不會被誤刪；邊緣做一階羽化。
+   * 對灰牆、複雜背景效果有限（需要真正的去背 App）。
+   * @param {File|string} input
+   * @param {object} opts { maxDim=1000, tolerance=48 }
+   * @returns {Promise<string>} 透明 PNG data URI
+   */
+  function removeSolidBg(input, opts) {
+    opts = opts || {};
+    var maxDim = opts.maxDim || 1000;
+    var tol = opts.tolerance || 48;
+    var tol2 = tol + 34;                       // 羽化外緣
+    var srcPromise = typeof input === 'string' ? Promise.resolve(input) : fileToDataURL(input);
+
+    return srcPromise.then(loadImage).then(function (im) {
+      var scale = Math.min(1, maxDim / Math.max(im.naturalWidth, im.naturalHeight));
+      var w = Math.max(1, Math.round(im.naturalWidth * scale));
+      var h = Math.max(1, Math.round(im.naturalHeight * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(im, 0, 0, w, h);
+      var id = ctx.getImageData(0, 0, w, h);
+      var d = id.data;
+      var N = w * h;
+
+      // 背景色 = 四角平均
+      function rgbAt(p) { var i = p * 4; return [d[i], d[i + 1], d[i + 2]]; }
+      var cs = [rgbAt(0), rgbAt(w - 1), rgbAt((h - 1) * w), rgbAt(N - 1)];
+      var bg = [0, 0, 0];
+      cs.forEach(function (c) { bg[0] += c[0]; bg[1] += c[1]; bg[2] += c[2]; });
+      bg = [bg[0] / 4, bg[1] / 4, bg[2] / 4];
+      function distP(p) {
+        var i = p * 4, dr = d[i] - bg[0], dg = d[i + 1] - bg[1], db = d[i + 2] - bg[2];
+        return Math.sqrt(dr * dr + dg * dg + db * db);
+      }
+
+      var stateArr = new Uint8Array(N);         // 0 未定, 1 背景(透明)
+      var stack = [];
+      function seed(x, y) { var p = y * w + x; if (!stateArr[p] && distP(p) < tol) { stateArr[p] = 1; stack.push(p); } }
+      for (var x = 0; x < w; x++) { seed(x, 0); seed(x, h - 1); }
+      for (var y = 0; y < h; y++) { seed(0, y); seed(w - 1, y); }
+      while (stack.length) {
+        var p = stack.pop(); var px = p % w, py = (p - px) / w;
+        if (px > 0) { var l = p - 1; if (!stateArr[l] && distP(l) < tol) { stateArr[l] = 1; stack.push(l); } }
+        if (px < w - 1) { var r = p + 1; if (!stateArr[r] && distP(r) < tol) { stateArr[r] = 1; stack.push(r); } }
+        if (py > 0) { var u = p - w; if (!stateArr[u] && distP(u) < tol) { stateArr[u] = 1; stack.push(u); } }
+        if (py < h - 1) { var dn = p + w; if (!stateArr[dn] && distP(dn) < tol) { stateArr[dn] = 1; stack.push(dn); } }
+      }
+
+      for (var q = 0; q < N; q++) {
+        var i4 = q * 4;
+        if (stateArr[q] === 1) { d[i4 + 3] = 0; continue; }
+        var dd = distP(q);
+        if (dd < tol2) {                          // 邊緣羽化：靠近背景且鄰接透明區
+          var qx = q % w, qy = (q - qx) / w, adj = false;
+          if (qx > 0 && stateArr[q - 1] === 1) adj = true;
+          else if (qx < w - 1 && stateArr[q + 1] === 1) adj = true;
+          else if (qy > 0 && stateArr[q - w] === 1) adj = true;
+          else if (qy < h - 1 && stateArr[q + w] === 1) adj = true;
+          if (adj) {
+            var a = Math.round(((dd - tol) / (tol2 - tol)) * 255);
+            d[i4 + 3] = Math.max(0, Math.min(255, a));
+          }
+        }
+      }
+
+      ctx.putImageData(id, 0, 0);
+      var out = canvas.toDataURL('image/png');
+      // 太大再縮一次（透明 PNG 用 fitPhoto 二次壓）
+      if (dataURLBytes(out) / 1024 > 700) return fitPhoto(out, 800);
+      return out;
+    });
+  }
+
+  global.removeSolidBg = removeSolidBg;
 })(window);

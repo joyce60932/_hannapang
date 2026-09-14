@@ -166,6 +166,8 @@ textarea{resize:vertical; min-height:64px; line-height:1.7}
   background-size:12px 12px;
 }
 .photo-actions{flex:1;display:flex;flex-direction:column;gap:6px}
+.cut-opt{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer}
+.cut-opt input{width:auto;margin:0}
 
 /* ── 卡片工具列 ── */
 .card-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}

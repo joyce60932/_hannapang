@@ -12,7 +12,7 @@
 
   var HINTS = {
     A: '滿版真人照 + 鵝黃金字，文字沉左下。標題想讓關鍵字變<b>鵝黃</b>，用星號包住：<b>10 年喝掉 *54 萬*</b>。上傳照片會自動裁成 1080×1350。',
-    B: '白底 + 去背產品圖 + 大數字（機會成本／對比）。上傳<b>去背 PNG</b>（透明背景）效果最好。「對比 VS」頁左右各放一張圖與大數字；文字可換行。',
+    B: '白底 + 去背產品圖 + 大數字（機會成本／對比）。上傳圖片時勾「<b>自動去背（白底）</b>」，白底商品照會自動去背；灰牆／複雜背景建議先用去背 App。「對比 VS」頁左右各放一張圖與大數字；文字可換行。',
   };
 
   // 把模板 CSS 注入頁面（切換時替換）
@@ -264,21 +264,37 @@
     var actions = el('<div class="photo-actions"></div>');
     var fileBtn = el('<label class="btn ghost sm btn-file">' + (card[spec.key] ? '更換' : '上傳') + '<input type="file" accept="image/*"></label>');
     var fileInput = fileBtn.querySelector('input');
+
+    // 去背選項（僅透明圖模式）：白底商品照可一鍵去背
+    var cutChk = null;
+    if (spec.imageMode === 'transparent') {
+      var cutWrap = el('<label class="cut-opt"><input type="checkbox" checked> 上傳時自動去背（白底）</label>');
+      cutChk = cutWrap.querySelector('input');
+      actions.appendChild(fileBtn);
+      actions.appendChild(cutWrap);
+    } else {
+      actions.appendChild(fileBtn);
+    }
+
     fileInput.addEventListener('change', function () {
       var fl = fileInput.files && fileInput.files[0];
       if (!fl) return;
       thumb.textContent = '處理中…';
-      var job = spec.imageMode === 'transparent'
-        ? window.fitPhoto(fl, 1000)
-        : window.cropPhoto(fl, 0.10);
+      var job;
+      if (spec.imageMode === 'transparent') {
+        job = (cutChk && cutChk.checked) ? window.removeSolidBg(fl, { maxDim: 1000 }) : window.fitPhoto(fl, 1000);
+      } else {
+        job = window.cropPhoto(fl, 0.10);
+      }
       job.then(function (dataURL) {
         card[spec.key] = dataURL;
         buildEditor(); buildPreview(); save();
-        toast(spec.imageMode === 'transparent' ? '去背圖已放入' : '照片已裁成 1080×1350');
+        toast(spec.imageMode === 'transparent'
+          ? ((cutChk && cutChk.checked) ? '已去背並放入' : '去背圖已放入')
+          : '照片已裁成 1080×1350');
       }).catch(function () { thumb.textContent = '失敗'; toast('圖片處理失敗'); });
       fileInput.value = '';
     });
-    actions.appendChild(fileBtn);
     if (card[spec.key]) {
       var rm = el('<button class="btn danger sm">移除</button>');
       rm.addEventListener('click', function () {
