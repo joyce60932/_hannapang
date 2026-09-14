@@ -28,10 +28,11 @@
   function tpl() { return window.TEMPLATES[state.template]; }
 
   function loadActive() {
+    // 預設用「極簡白對比（模板 B）」——使用者偏好（見 CLAUDE.md）
     try {
       var a = localStorage.getItem(ACTIVE_KEY);
-      return (a && window.TEMPLATES[a]) ? a : 'A';
-    } catch (e) { return 'A'; }
+      return (a && window.TEMPLATES[a]) ? a : 'B';
+    } catch (e) { return 'B'; }
   }
   function saveActive() {
     try { localStorage.setItem(ACTIVE_KEY, activeTemplate); } catch (e) {}
