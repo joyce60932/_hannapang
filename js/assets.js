@@ -1,7 +1,7 @@
 /*
  * assets.js — 內建向量插圖（SVG，透明去背，data URI）
  * ------------------------------------------------------------------
- * 給模板 B 當預設圖片用。SVG 本身透明、可縮放、體積小、完全自足。
+ * 給模板 B 當預設圖片用。全部自繪、無版權、透明背景、可縮放、體積小、完全自足。
  * 使用者之後可用真實去背 PNG 覆蓋。
  */
 (function (global) {
@@ -11,37 +11,57 @@
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
 
-  // 手搖飲杯（珍珠奶茶）
+  // 手搖飲杯（扁平插畫風：漸層奶茶 + 珍珠 + 粗吸管）
   var bubbleTea =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="280" viewBox="0 0 220 280" fill="none">' +
-    '<rect x="120" y="28" width="15" height="92" rx="7" transform="rotate(12 127 74)" fill="#c9695f"/>' +
-    '<path d="M34 92 Q110 32 186 92 Z" fill="#ece7dd" stroke="#2f2b26" stroke-width="5" stroke-linejoin="round"/>' +
-    '<rect x="30" y="90" width="160" height="17" rx="6" fill="#ece7dd" stroke="#2f2b26" stroke-width="5"/>' +
-    '<path d="M43 108 L177 108 L161 258 Q159 268 149 268 L71 268 Q61 268 59 258 Z" fill="#ffffff" stroke="#2f2b26" stroke-width="5" stroke-linejoin="round"/>' +
-    '<path d="M52 168 L168 168 L161 258 Q159 268 149 268 L71 268 Q61 268 59 258 Z" fill="#e3d2b4"/>' +
-    '<g fill="#3a2f27">' +
-    '<circle cx="78" cy="250" r="9"/><circle cx="100" cy="255" r="9"/><circle cx="122" cy="250" r="9"/>' +
-    '<circle cx="143" cy="253" r="9"/><circle cx="90" cy="238" r="9"/><circle cx="113" cy="240" r="9"/><circle cx="134" cy="238" r="9"/>' +
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="380" viewBox="0 0 300 380" fill="none">' +
+    '<defs><linearGradient id="tea" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#e8cca7"/><stop offset="0.55" stop-color="#d2a675"/><stop offset="1" stop-color="#bd8a55"/>' +
+    '</linearGradient></defs>' +
+    '<ellipse cx="150" cy="362" rx="92" ry="15" fill="#000000" opacity="0.08"/>' +
+    '<path d="M70 72 L230 72 L214 340 Q212 352 200 352 L100 352 Q88 352 86 340 Z" fill="#ffffff" stroke="#33302b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<path d="M79 152 L221 152 L214 340 Q212 352 200 352 L100 352 Q88 352 86 340 Z" fill="url(#tea)"/>' +
+    '<rect x="79" y="150" width="142" height="11" rx="3" fill="#f1e4d0"/>' +
+    '<g fill="#241a14">' +
+    '<circle cx="108" cy="338" r="12"/><circle cx="130" cy="341" r="12"/><circle cx="152" cy="338" r="12"/><circle cx="174" cy="341" r="12"/><circle cx="196" cy="337" r="12"/>' +
+    '<circle cx="119" cy="323" r="12"/><circle cx="141" cy="324" r="12"/><circle cx="163" cy="323" r="12"/><circle cx="185" cy="323" r="12"/>' +
+    '<circle cx="130" cy="309" r="11"/><circle cx="152" cy="309" r="11"/><circle cx="174" cy="309" r="11"/>' +
     '</g>' +
-    '<path d="M43 108 L177 108 L161 258 Q159 268 149 268 L71 268 Q61 268 59 258 Z" fill="none" stroke="#2f2b26" stroke-width="5" stroke-linejoin="round"/>' +
+    '<rect x="152" y="26" width="20" height="128" rx="10" transform="rotate(11 162 90)" fill="#4a3b30"/>' +
+    '<path d="M70 72 L230 72 L214 340 Q212 352 200 352 L100 352 Q88 352 86 340 Z" fill="none" stroke="#33302b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<ellipse cx="150" cy="72" rx="80" ry="14" fill="#ffffff" stroke="#33302b" stroke-width="5"/>' +
     '</svg>';
 
-  // 錢幣成長（投資：上升箭頭 + 遞增金幣）
+  // 千元鈔扇（一疊鈔票展開，藍綠色系；風格化、非真鈔複製）
+  var money = (function () {
+    var notes = '';
+    var angles = [-46, -27.5, -9, 9, 27.5, 46];
+    angles.forEach(function (a) {
+      notes +=
+        '<g transform="rotate(' + a + ' 170 258)">' +
+        '<rect x="94" y="44" width="152" height="76" rx="9" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="4"/>' +
+        '<rect x="104" y="54" width="132" height="56" rx="6" fill="none" stroke="#6ea3b0" stroke-width="2"/>' +
+        '<circle cx="128" cy="82" r="17" fill="#8bc0cd" stroke="#4b7d8b" stroke-width="2"/>' +
+        '<text x="205" y="90" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#33616e" text-anchor="middle">1000</text>' +
+        '</g>';
+    });
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="340" height="300" viewBox="0 0 340 300" fill="none">' +
+      '<ellipse cx="170" cy="286" rx="96" ry="12" fill="#000000" opacity="0.07"/>' +
+      notes + '</svg>';
+  })();
+
+  // 錢幣成長（上升箭頭 + 遞增金幣）
   var coinGrowth =
     '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" fill="none">' +
     '<path d="M30 205 L110 150 L200 70" stroke="#2f2b26" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
     '<path d="M176 70 L200 70 L200 94" stroke="#2f2b26" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
     '<g stroke="#9a7b32" stroke-width="4">' +
-    '<circle cx="58" cy="200" r="30" fill="#e0be6a"/>' +
-    '<circle cx="120" cy="158" r="30" fill="#e0be6a"/>' +
-    '<circle cx="184" cy="112" r="30" fill="#e0be6a"/>' +
+    '<circle cx="58" cy="200" r="30" fill="#e0be6a"/><circle cx="120" cy="158" r="30" fill="#e0be6a"/><circle cx="184" cy="112" r="30" fill="#e0be6a"/>' +
     '</g>' +
     '<g stroke="#9a7b32" stroke-width="3" fill="none">' +
-    '<circle cx="58" cy="200" r="20"/><circle cx="120" cy="158" r="20"/><circle cx="184" cy="112" r="20"/>' +
-    '</g>' +
+    '<circle cx="58" cy="200" r="20"/><circle cx="120" cy="158" r="20"/><circle cx="184" cy="112" r="20"/></g>' +
     '</svg>';
 
-  // 撲滿存錢（存起來不投資）
+  // 撲滿存錢
   var piggy =
     '<svg xmlns="http://www.w3.org/2000/svg" width="260" height="230" viewBox="0 0 260 230" fill="none">' +
     '<path d="M40 120 Q40 70 110 66 Q140 40 150 62 Q200 66 214 110 Q236 112 236 132 Q236 150 214 150 Q206 176 176 188 L178 208 Q178 214 172 214 L154 214 Q148 214 148 208 L146 196 Q120 200 96 194 L94 208 Q94 214 88 214 L70 214 Q64 214 64 208 L66 184 Q46 166 44 140 Q30 138 30 126 Q30 120 40 120 Z" fill="#e7d4c4" stroke="#2f2b26" stroke-width="5" stroke-linejoin="round"/>' +
@@ -53,6 +73,7 @@
 
   global.ART = {
     bubbleTea: uri(bubbleTea),
+    money: uri(money),
     coinGrowth: uri(coinGrowth),
     piggy: uri(piggy),
   };

@@ -235,7 +235,7 @@
           label: '把 150 元投資 10 年（年化 8%）的未來值',
           note: '你以為 150，其實多付了一倍' },
         // 對比 VS｜差距 + 倍數
-        { id: uid(), type: 'compare', leftImg: art('bubbleTea'), rightImg: art('coinGrowth'),
+        { id: uid(), type: 'compare', leftImg: art('bubbleTea'), rightImg: art('money'),
           leftLabel: '每天喝掉', leftPrice: 'NT$54,000／年', leftCap: '10 年後', leftBig: '0 元',
           rightLabel: '拿去投資', rightPrice: '年化 8%', rightCap: '10 年後', rightBig: '82 萬',
           note: '同一筆錢，差了 82 萬\n投資是「只存不投」的 1.5 倍' },
@@ -245,7 +245,7 @@
           label: '每天一杯 × 365 天 × 10 年',
           note: '≈ 54 萬元，全部喝進肚子裡' },
         // 投資結果
-        { id: uid(), type: 'stat', img: art('coinGrowth'),
+        { id: uid(), type: 'stat', img: art('money'),
           kicker: '同一筆錢拿去投資', big: '82 萬',
           label: '每月 4,500 × 年化 8% × 10 年',
           note: '（示意試算，年化會浮動、投資有風險）' },
