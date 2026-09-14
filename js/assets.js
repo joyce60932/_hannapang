@@ -71,10 +71,23 @@
     '<line x1="122" y1="52" x2="122" y2="66" stroke="#9a7b32" stroke-width="4"/>' +
     '</svg>';
 
+  // 沙漏（時間）
+  var hourglass =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="264" viewBox="0 0 200 264" fill="none">' +
+    '<rect x="32" y="18" width="136" height="15" rx="7" fill="#8a6d3a"/>' +
+    '<rect x="32" y="231" width="136" height="15" rx="7" fill="#8a6d3a"/>' +
+    '<path d="M52 33 L148 33 L100 132 Z" fill="#f1ede6" stroke="#8a6d3a" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M100 132 L52 231 L148 231 Z" fill="#f1ede6" stroke="#8a6d3a" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M72 74 L128 74 L100 132 Z" fill="#e0be6a"/>' +
+    '<path d="M62 231 L138 231 L100 184 Z" fill="#e0be6a"/>' +
+    '<line x1="100" y1="132" x2="100" y2="196" stroke="#e0be6a" stroke-width="4"/>' +
+    '</svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
     coinGrowth: uri(coinGrowth),
     piggy: uri(piggy),
+    hourglass: uri(hourglass),
   };
 })(window);

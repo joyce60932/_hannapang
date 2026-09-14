@@ -7,8 +7,21 @@
 (function () {
   'use strict';
 
-  var STORE_PREFIX = 'hanna_carousel_v3_';   // 每模板一份：..._A / ..._B
-  var ACTIVE_KEY = 'hanna_active_v3';
+  // 可選的「預設主題」：由打包後的單檔在載入前注入 window.CAROUSEL_PRESET
+  //   { ns:'timing', active:'B', states:{ B:{...state...} } }
+  // ns 讓不同主題的單檔各存各的 localStorage，不互相蓋。
+  var PRESET = (window.CAROUSEL_PRESET && typeof window.CAROUSEL_PRESET === 'object') ? window.CAROUSEL_PRESET : null;
+
+  var STORE_PREFIX = 'hanna_carousel_v3_' + (PRESET && PRESET.ns ? PRESET.ns + '_' : '');
+  var ACTIVE_KEY = 'hanna_active_v3' + (PRESET && PRESET.ns ? '_' + PRESET.ns : '');
+
+  function presetState(t) {
+    if (!PRESET || !PRESET.states || !PRESET.states[t]) return null;
+    var s = JSON.parse(JSON.stringify(PRESET.states[t]));
+    s.template = t;
+    (s.cards || []).forEach(function (c, i) { if (!c.id) c.id = 'p' + i + Math.random().toString(36).slice(2, 6); });
+    return s;
+  }
 
   var HINTS = {
     A: '滿版真人照 + 鵝黃金字，文字沉左下。標題想讓關鍵字變<b>鵝黃</b>，用星號包住：<b>10 年喝掉 *54 萬*</b>。上傳照片會自動裁成 1080×1350。',
@@ -21,18 +34,19 @@
 
   // ── 狀態 ──
   var activeTemplate = loadActive();
-  var state = loadState(activeTemplate) || window.TEMPLATES[activeTemplate].defaultState();
+  var state = loadState(activeTemplate) || presetState(activeTemplate) || window.TEMPLATES[activeTemplate].defaultState();
   var cur = 0;
   var openId = state.cards[0] && state.cards[0].id;
 
   function tpl() { return window.TEMPLATES[state.template]; }
 
   function loadActive() {
-    // 預設用「極簡白對比（模板 B）」——使用者偏好（見 CLAUDE.md）
+    // 預設用「極簡白對比（模板 B）」——使用者偏好（見 CLAUDE.md）；有預設主題就用它指定的
+    var fallback = (PRESET && PRESET.active && window.TEMPLATES[PRESET.active]) ? PRESET.active : 'B';
     try {
       var a = localStorage.getItem(ACTIVE_KEY);
-      return (a && window.TEMPLATES[a]) ? a : 'B';
-    } catch (e) { return 'B'; }
+      return (a && window.TEMPLATES[a]) ? a : fallback;
+    } catch (e) { return fallback; }
   }
   function saveActive() {
     try { localStorage.setItem(ACTIVE_KEY, activeTemplate); } catch (e) {}
@@ -106,7 +120,7 @@
     save();                                  // 存目前模板
     activeTemplate = t;
     saveActive();
-    state = loadState(t) || window.TEMPLATES[t].defaultState();
+    state = loadState(t) || presetState(t) || window.TEMPLATES[t].defaultState();
     cur = 0;
     openId = state.cards[0] && state.cards[0].id;
     buildAll();
@@ -443,7 +457,7 @@
     $('btnExport').addEventListener('click', exportHTML);
     $('btnReset').addEventListener('click', function () {
       if (!confirm('確定要清空「' + tpl().name + '」的內容、恢復預設範例嗎？')) return;
-      state = window.TEMPLATES[state.template].defaultState();
+      state = presetState(state.template) || window.TEMPLATES[state.template].defaultState();
       cur = 0; openId = state.cards[0].id;
       buildAll(); toast('已重設此模板');
     });
