@@ -7,7 +7,7 @@
 (function () {
   'use strict';
 
-  var STORE_KEY = 'hanna_carousel_v1';
+  var STORE_KEY = 'hanna_carousel_v2';
 
   // 把卡片設計系統 CSS 注入頁面，讓預覽與匯出長得一致
   (function injectCardCSS() {
@@ -17,35 +17,67 @@
   })();
 
   // ── 預設內容（第一次開啟時的範例，之後可整段替換）──
+  //    目前內容：〈每天一杯手搖飲，10 年喝掉多少？〉機會成本 × 複利
   function defaultState() {
     return {
       settings: {
-        seriesLabel: 'HANNA STORY ✦',
+        seriesLabel: '幣圈媽媽 ✦',
         account: '@_hannapang',
-        hashtag: '#理財知識',
+        hashtag: '#複利的力量',
       },
       caption:
-        '存不到錢\n不是你賺得不夠\n\n' +
-        '是沒有第一桶本金\n再拼都像倉鼠跑滾輪\n跑得再快，還是停在原地\n\n' +
-        '能利滾利的是錢\n不是你的體力\n\n' +
-        '想存出第一桶\n再讓錢自己滾\n留言「+7」，我把完整流程私訊給你\n\n' +
-        '#理財知識',
+        '我不是要你什麼都別買，\n而是想讓你看見——\n那杯「才 150 元」的飲料，\n10 年後，其實是 80 幾萬。\n\n' +
+        '小錢不是小事，\n它只是還沒被你看見的複利。\n\n' +
+        '從今天起，\n留一杯的錢，給未來的自己。\n\n' +
+        '#龐玉涵 #幣圈媽媽 #複利的力量',
       cards: [
+        // 1 封面｜破題
         {
-          id: uid(), type: 'cover', anchor: '第一桶金',
-          head: '存不到錢\n不是你*賺得不夠*', body: '', close: '而是還沒開始', credit: '', img: '',
+          id: uid(), type: 'cover', anchor: '每天一杯手搖飲',
+          head: '10 年，喝掉 *54 萬* 😱', body: '',
+          close: '你少賺的，比這更多… →', credit: '', img: '',
         },
+        // 2 內頁｜情緒提問
         {
-          id: uid(), type: 'inner', anchor: '倉鼠滾輪',
-          head: '再拼都像*跑滾輪*',
-          body: '沒有第一桶本金，跑得再快，還是停在原地。能利滾利的是錢，不是你的體力。',
-          close: '先存本金，再讓錢滾錢', credit: '', img: '',
+          id: uid(), type: 'inner', anchor: '才 150 元',
+          head: '真正讓你*存不到錢*的',
+          body: '一天才 150 元，你從來沒把它加起來過。\n讓你存不到錢的，從來不是大筆花費，而是那些「才 150 元」的小確幸。',
+          close: '小錢，才是關鍵', credit: '', img: '',
         },
+        // 3 內頁｜A 每天喝掉
+        {
+          id: uid(), type: 'inner', anchor: 'A ｜每天喝掉',
+          head: '10 年後，剩 *0 元*',
+          body: '💰 一天一杯約 150 元\n一個月：約 4,500 元\n一年：約 54,000 元\n10 年後：0 元',
+          close: '只剩習慣（和體重 😅）', credit: '', img: '',
+        },
+        // 4 內頁｜B 存起來不投資
+        {
+          id: uid(), type: 'inner', anchor: 'B ｜存起來',
+          head: '10 年存下 *54 萬*',
+          body: '💰 一天少喝一杯，把錢存下來\n每月存 4,500 元\n10 年本金：540,000 元',
+          close: '有存到，但錢只是「不動」', credit: '', img: '',
+        },
+        // 5 內頁｜C 定期定額（揭曉）
+        {
+          id: uid(), type: 'inner', anchor: 'C ｜拿去投資',
+          head: '10 年滾出 *82 萬*',
+          body: '💰 每月 4,500 元，假設年化 8%\n投入本金：540,000 元\n10 年後約：820,000 元\n（示意試算，投資有風險）',
+          close: '同一杯的錢，多滾出 28 萬', credit: '', img: '',
+        },
+        // 6 內頁｜我的選擇
+        {
+          id: uid(), type: 'inner', anchor: '我的選擇',
+          head: '把其中*一杯*，換成未來',
+          body: '我沒有戒掉所有小確幸，只是把「其中一杯」，換成投資未來的自己。\n① 每天一杯的錢 → 每月定期定額\n② 不痛不癢，卻能滾 10 年。',
+          close: '差距，都是從「一杯」開始', credit: '', img: '',
+        },
+        // 7 CTA｜透明追蹤
         {
           id: uid(), type: 'cta', anchor: '換你了',
-          head: '想存出第一桶金？',
-          body: '留言「+7」，我把完整流程私訊給你。',
-          close: '留言告訴我', credit: '', img: '',
+          head: '留一杯的錢，給*未來的自己*',
+          body: '我把每個月的定期定額紀錄，都更新在這裡。\n想一起滾出下一個 10 年嗎？',
+          close: '追蹤我，一起記錄 →', credit: '', img: '',
         },
       ],
     };
