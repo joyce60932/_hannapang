@@ -224,15 +224,35 @@
         '從今天起，\n留一杯的錢，給未來的自己。\n\n' +
         '#龐玉涵 #幣圈媽媽 #複利的力量',
       cards: [
-        { id: uid(), type: 'cover', img: art('bubbleTea'), title: '一杯手搖飲的錢\n10 年能變成什麼？', price: '每天一杯 · NT$150', note: '從一杯，到一筆本金\n差別只在有沒有開始' },
+        // 封面｜反常識具象鉤子（一杯 → 一台車）
+        { id: uid(), type: 'cover', img: art('bubbleTea'),
+          title: '每天一杯手搖飲\n10 年喝掉一台車 🚗',
+          price: 'NT$150／杯 · 10 年 = 82 萬',
+          note: '你喝掉的不是飲料\n是未來的一筆本金 →' },
+        // 揭穿單價｜反常識（150 → 324）
+        { id: uid(), type: 'stat', img: art('bubbleTea'),
+          kicker: '一杯手搖飲的真實代價', big: '324 元',
+          label: '把 150 元投資 10 年（年化 8%）的未來值',
+          note: '你以為 150，其實多付了一倍' },
+        // 對比 VS｜差距 + 倍數
         { id: uid(), type: 'compare', leftImg: art('bubbleTea'), rightImg: art('coinGrowth'),
           leftLabel: '每天喝掉', leftPrice: 'NT$54,000／年', leftCap: '10 年後', leftBig: '0 元',
           rightLabel: '拿去投資', rightPrice: '年化 8%', rightCap: '10 年後', rightBig: '82 萬',
-          note: '同一筆錢\n差了快 82 萬' },
-        { id: uid(), type: 'stat', img: art('bubbleTea'), kicker: 'A ｜每天喝掉', big: '0 元', label: '10 年後只剩習慣', note: '（和多出來的體重 😅）' },
-        { id: uid(), type: 'stat', img: art('piggy'), kicker: 'B ｜存起來不投資', big: '54 萬', label: '10 年本金，但錢只是「不動」', note: '' },
-        { id: uid(), type: 'stat', img: art('coinGrowth'), kicker: 'C ｜拿去定期定額', big: '82 萬', label: '每月 4,500 × 年化 8% × 10 年', note: '（示意試算，投資有風險）' },
-        { id: uid(), type: 'cta', title: '留一杯的錢\n給未來的自己', note: '我把每月定期定額紀錄更新在這裡\n想一起滾出下一個 10 年嗎？' },
+          note: '同一筆錢，差了 82 萬\n投資是「只存不投」的 1.5 倍' },
+        // 杯數震撼｜具象
+        { id: uid(), type: 'stat', img: art('bubbleTea'),
+          kicker: '10 年，你會喝掉', big: '3,650 杯',
+          label: '每天一杯 × 365 天 × 10 年',
+          note: '≈ 54 萬元，全部喝進肚子裡' },
+        // 投資結果
+        { id: uid(), type: 'stat', img: art('coinGrowth'),
+          kicker: '同一筆錢拿去投資', big: '82 萬',
+          label: '每月 4,500 × 年化 8% × 10 年',
+          note: '（示意試算，年化會浮動、投資有風險）' },
+        // CTA
+        { id: uid(), type: 'cta',
+          title: '留一杯的錢\n給未來的自己',
+          note: '我把每月定期定額紀錄更新在這裡\n想一起滾出下一個 10 年嗎？' },
       ],
     };
   }
