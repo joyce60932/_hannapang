@@ -135,6 +135,15 @@
     '<path d="M98 140 l8 9 l17 -19" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
     '</svg>';
 
+  // 比特幣幣（加密貨幣）
+  var bitcoin =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none">' +
+    '<circle cx="100" cy="100" r="82" fill="#e0be6a" stroke="#9a7b32" stroke-width="6"/>' +
+    '<rect x="86" y="30" width="9" height="26" rx="3" fill="#ffffff"/><rect x="108" y="30" width="9" height="26" rx="3" fill="#ffffff"/>' +
+    '<rect x="86" y="144" width="9" height="26" rx="3" fill="#ffffff"/><rect x="108" y="144" width="9" height="26" rx="3" fill="#ffffff"/>' +
+    '<text x="99" y="138" font-family="Arial, sans-serif" font-size="112" font-weight="700" fill="#ffffff" text-anchor="middle">B</text>' +
+    '</svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
@@ -145,5 +154,6 @@
     sugar: uri(sugar),
     scale: uri(scale),
     calendar: uri(calendar),
+    bitcoin: uri(bitcoin),
   };
 })(window);
