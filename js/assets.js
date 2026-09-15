@@ -119,6 +119,22 @@
     '<rect x="70" y="178" width="18" height="14" rx="4" fill="#7a756c"/><rect x="152" y="178" width="18" height="14" rx="4" fill="#7a756c"/>' +
     '</svg>';
 
+  // 行事曆（定期扣款）
+  var calendar =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="210" viewBox="0 0 220 210" fill="none">' +
+    '<rect x="26" y="36" width="168" height="150" rx="16" fill="#ffffff" stroke="#4b7d8b" stroke-width="5"/>' +
+    '<path d="M26 62 a16 16 0 0 1 16 -16 h136 a16 16 0 0 1 16 16 v14 h-168 Z" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<line x1="70" y1="24" x2="70" y2="52" stroke="#4b7d8b" stroke-width="9" stroke-linecap="round"/>' +
+    '<line x1="150" y1="24" x2="150" y2="52" stroke="#4b7d8b" stroke-width="9" stroke-linecap="round"/>' +
+    '<g fill="#d7e6ea">' +
+    '<circle cx="62" cy="104" r="7"/><circle cx="102" cy="104" r="7"/><circle cx="158" cy="104" r="7"/>' +
+    '<circle cx="62" cy="140" r="7"/><circle cx="158" cy="140" r="7"/>' +
+    '<circle cx="62" cy="166" r="7"/><circle cx="102" cy="166" r="7"/><circle cx="158" cy="166" r="7"/>' +
+    '</g>' +
+    '<circle cx="110" cy="140" r="28" fill="#e0be6a" stroke="#9a7b32" stroke-width="4"/>' +
+    '<path d="M98 140 l8 9 l17 -19" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
@@ -128,5 +144,6 @@
     plane: uri(plane),
     sugar: uri(sugar),
     scale: uri(scale),
+    calendar: uri(calendar),
   };
 })(window);
