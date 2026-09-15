@@ -105,6 +105,20 @@
     '<line x1="82" y1="98" x2="98" y2="98"/><line x1="138" y1="98" x2="154" y2="98"/><line x1="110" y1="46" x2="126" y2="46"/>' +
     '</g></svg>';
 
+  // 體重計
+  var scale =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="210" viewBox="0 0 240 210" fill="none">' +
+    '<rect x="38" y="44" width="164" height="134" rx="26" fill="#eceae4" stroke="#7a756c" stroke-width="5"/>' +
+    '<rect x="58" y="62" width="124" height="98" rx="16" fill="#ffffff" stroke="#7a756c" stroke-width="4"/>' +
+    '<path d="M80 142 A42 42 0 0 1 160 142" fill="none" stroke="#cfcabf" stroke-width="4"/>' +
+    '<g stroke="#b8b2a6" stroke-width="3" stroke-linecap="round">' +
+    '<line x1="84" y1="126" x2="92" y2="130"/><line x1="102" y1="112" x2="107" y2="120"/><line x1="120" y1="106" x2="120" y2="115"/><line x1="138" y1="112" x2="133" y2="120"/><line x1="156" y1="126" x2="148" y2="130"/>' +
+    '</g>' +
+    '<line x1="120" y1="142" x2="150" y2="112" stroke="#c94f4f" stroke-width="5" stroke-linecap="round"/>' +
+    '<circle cx="120" cy="142" r="7" fill="#7a756c"/>' +
+    '<rect x="70" y="178" width="18" height="14" rx="4" fill="#7a756c"/><rect x="152" y="178" width="18" height="14" rx="4" fill="#7a756c"/>' +
+    '</svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
@@ -113,5 +127,6 @@
     hourglass: uri(hourglass),
     plane: uri(plane),
     sugar: uri(sugar),
+    scale: uri(scale),
   };
 })(window);

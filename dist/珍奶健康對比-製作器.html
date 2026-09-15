@@ -878,6 +878,20 @@ textarea{resize:vertical; min-height:64px; line-height:1.7}
     '<line x1="82" y1="98" x2="98" y2="98"/><line x1="138" y1="98" x2="154" y2="98"/><line x1="110" y1="46" x2="126" y2="46"/>' +
     '</g></svg>';
 
+  // 體重計
+  var scale =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="210" viewBox="0 0 240 210" fill="none">' +
+    '<rect x="38" y="44" width="164" height="134" rx="26" fill="#eceae4" stroke="#7a756c" stroke-width="5"/>' +
+    '<rect x="58" y="62" width="124" height="98" rx="16" fill="#ffffff" stroke="#7a756c" stroke-width="4"/>' +
+    '<path d="M80 142 A42 42 0 0 1 160 142" fill="none" stroke="#cfcabf" stroke-width="4"/>' +
+    '<g stroke="#b8b2a6" stroke-width="3" stroke-linecap="round">' +
+    '<line x1="84" y1="126" x2="92" y2="130"/><line x1="102" y1="112" x2="107" y2="120"/><line x1="120" y1="106" x2="120" y2="115"/><line x1="138" y1="112" x2="133" y2="120"/><line x1="156" y1="126" x2="148" y2="130"/>' +
+    '</g>' +
+    '<line x1="120" y1="142" x2="150" y2="112" stroke="#c94f4f" stroke-width="5" stroke-linecap="round"/>' +
+    '<circle cx="120" cy="142" r="7" fill="#7a756c"/>' +
+    '<rect x="70" y="178" width="18" height="14" rx="4" fill="#7a756c"/><rect x="152" y="178" width="18" height="14" rx="4" fill="#7a756c"/>' +
+    '</svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
@@ -886,6 +900,7 @@ textarea{resize:vertical; min-height:64px; line-height:1.7}
     hourglass: uri(hourglass),
     plane: uri(plane),
     sugar: uri(sugar),
+    scale: uri(scale),
   };
 })(window);
 
@@ -1396,7 +1411,8 @@ runtime +
  *   糖：一杯全糖珍奶 ≈ 60g（≈12 顆方糖）→ 219,000 g = 219 公斤
  *   熱量：一杯 ≈ 600 大卡 → 2,190,000 = 219 萬大卡
  *   錢：每月 4,500（≈每天 150）、年化 8%、10 年 ≈ 82 萬
- *   出國：82 萬 ÷ 3 萬（日本自由行/次）≈ 27 次
+ *   出國：82 萬 ÷ 8 萬（歐洲旅行/次）≈ 10 次
+ *   糖顆數：60g ÷ 5g ≈ 12 顆方糖/杯 × 3,650 杯 = 43,800 顆
  */
 window.CAROUSEL_PRESET = {
   ns: 'health',
@@ -1424,13 +1440,13 @@ window.CAROUSEL_PRESET = {
             title: '每天一杯手搖飲\n10 年喝掉 219 公斤糖 😱',
             price: '＋ 219 萬大卡　＋ 說不定的脂肪肝',
             note: '同一杯的錢，還能換一個更好的未來 →' },
-          // 2 糖
+          // 2 糖（方糖顆數更誇張）
           { id: 'h2', type: 'stat', img: A.sugar || '',
-            kicker: '10 年喝進的糖', big: '219 公斤',
-            label: '一杯 ≈ 60g 糖（12 顆方糖）× 3,650 杯',
+            kicker: '10 年喝進的糖 =', big: '43,800 顆方糖',
+            label: '一杯 ≈ 12 顆方糖 × 3,650 杯（≈ 219 公斤）',
             note: 'WHO 建議每天 <25g，一杯就超標 2 倍' },
-          // 3 熱量
-          { id: 'h3', type: 'stat', img: A.bubbleTea || '',
+          // 3 熱量（體重計）
+          { id: 'h3', type: 'stat', img: A.scale || '',
             kicker: '10 年多吃的熱量', big: '219 萬大卡',
             label: '一杯 ≈ 600 大卡（一個便當）× 3,650 杯',
             note: '若沒消耗，約每 12 天多胖 1 公斤的節奏' },
@@ -1439,10 +1455,10 @@ window.CAROUSEL_PRESET = {
             leftLabel: '每天喝掉', leftPrice: '10 年後', leftCap: '你得到', leftBig: '0 元 + 219kg 糖',
             rightLabel: '換成投資', rightPrice: '10 年後', rightCap: '你得到', rightBig: '82 萬 + 健康',
             note: '同一杯的錢，兩種未來' },
-          // 5 出國
+          // 5 出國（歐洲單價）
           { id: 'h5', type: 'stat', img: A.plane || '',
-            kicker: '82 萬能做什麼', big: '出國 27 次',
-            label: '以日本自由行 ≈ 3 萬／次估算',
+            kicker: '82 萬能做什麼', big: '玩遍歐洲 10 次',
+            label: '以歐洲旅行 ≈ 8 萬／次估算',
             note: '同樣的錢，喝掉？還是飛出去？' },
           // 6 我的選擇
           { id: 'h6', type: 'cta',
