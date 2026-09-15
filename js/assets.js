@@ -83,11 +83,35 @@
     '<line x1="100" y1="132" x2="100" y2="196" stroke="#e0be6a" stroke-width="4"/>' +
     '</svg>';
 
+  // 紙飛機（出國／旅行）
+  var plane =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="210" viewBox="0 0 240 210" fill="none">' +
+    '<path d="M24 148 Q74 150 112 128" stroke="#c3c0ba" stroke-width="3" stroke-dasharray="2 11" stroke-linecap="round"/>' +
+    '<path d="M28 118 L214 38 L112 128 Z" fill="#c9e4ea" stroke="#4b7d8b" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M214 38 L124 178 L112 128 Z" fill="#8bc0cd" stroke="#4b7d8b" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M112 128 L124 178 L104 150 Z" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="4" stroke-linejoin="round"/>' +
+    '</svg>';
+
+  // 糖（方糖堆）
+  var sugar =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="210" viewBox="0 0 240 210" fill="none">' +
+    '<g fill="#ffffff" stroke="#c9b58a" stroke-width="4" stroke-linejoin="round">' +
+    '<rect x="42" y="132" width="52" height="52" rx="6"/><rect x="98" y="132" width="52" height="52" rx="6"/><rect x="154" y="132" width="52" height="52" rx="6"/>' +
+    '<rect x="70" y="80" width="52" height="52" rx="6"/><rect x="126" y="80" width="52" height="52" rx="6"/>' +
+    '<rect x="98" y="28" width="52" height="52" rx="6"/>' +
+    '</g>' +
+    '<g stroke="#e6d6b4" stroke-width="3" stroke-linecap="round">' +
+    '<line x1="54" y1="150" x2="70" y2="150"/><line x1="110" y1="150" x2="126" y2="150"/><line x1="166" y1="150" x2="182" y2="150"/>' +
+    '<line x1="82" y1="98" x2="98" y2="98"/><line x1="138" y1="98" x2="154" y2="98"/><line x1="110" y1="46" x2="126" y2="46"/>' +
+    '</g></svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
     coinGrowth: uri(coinGrowth),
     piggy: uri(piggy),
     hourglass: uri(hourglass),
+    plane: uri(plane),
+    sugar: uri(sugar),
   };
 })(window);
