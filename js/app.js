@@ -19,6 +19,7 @@
     if (!PRESET || !PRESET.states || !PRESET.states[t]) return null;
     var s = JSON.parse(JSON.stringify(PRESET.states[t]));
     s.template = t;
+    s._pv = PRESET.version || null;
     (s.cards || []).forEach(function (c, i) { if (!c.id) c.id = 'p' + i + Math.random().toString(36).slice(2, 6); });
     return s;
   }
@@ -57,6 +58,8 @@
       if (!raw) return null;
       var s = JSON.parse(raw);
       s.template = t;
+      // 預設主題有更新版本（_pv 不同）→ 丟棄舊存檔，改用新內容
+      if (PRESET && PRESET.version && s._pv !== PRESET.version) return null;
       return s;
     } catch (e) { return null; }
   }

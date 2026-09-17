@@ -6,6 +6,7 @@
  */
 window.CAROUSEL_PRESET = {
   ns: 'clarity',
+  version: '3',   // 內容有更新就改這個 → 使用者開檔會自動載入新內容
   active: 'B',
   states: {
     B: (function () {

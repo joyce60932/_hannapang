@@ -892,6 +892,31 @@ textarea{resize:vertical; min-height:64px; line-height:1.7}
     '<rect x="70" y="178" width="18" height="14" rx="4" fill="#7a756c"/><rect x="152" y="178" width="18" height="14" rx="4" fill="#7a756c"/>' +
     '</svg>';
 
+  // 行事曆（定期扣款）
+  var calendar =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="210" viewBox="0 0 220 210" fill="none">' +
+    '<rect x="26" y="36" width="168" height="150" rx="16" fill="#ffffff" stroke="#4b7d8b" stroke-width="5"/>' +
+    '<path d="M26 62 a16 16 0 0 1 16 -16 h136 a16 16 0 0 1 16 16 v14 h-168 Z" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<line x1="70" y1="24" x2="70" y2="52" stroke="#4b7d8b" stroke-width="9" stroke-linecap="round"/>' +
+    '<line x1="150" y1="24" x2="150" y2="52" stroke="#4b7d8b" stroke-width="9" stroke-linecap="round"/>' +
+    '<g fill="#d7e6ea">' +
+    '<circle cx="62" cy="104" r="7"/><circle cx="102" cy="104" r="7"/><circle cx="158" cy="104" r="7"/>' +
+    '<circle cx="62" cy="140" r="7"/><circle cx="158" cy="140" r="7"/>' +
+    '<circle cx="62" cy="166" r="7"/><circle cx="102" cy="166" r="7"/><circle cx="158" cy="166" r="7"/>' +
+    '</g>' +
+    '<circle cx="110" cy="140" r="28" fill="#e0be6a" stroke="#9a7b32" stroke-width="4"/>' +
+    '<path d="M98 140 l8 9 l17 -19" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>';
+
+  // 比特幣幣（加密貨幣）
+  var bitcoin =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none">' +
+    '<circle cx="100" cy="100" r="82" fill="#e0be6a" stroke="#9a7b32" stroke-width="6"/>' +
+    '<rect x="86" y="30" width="9" height="26" rx="3" fill="#ffffff"/><rect x="108" y="30" width="9" height="26" rx="3" fill="#ffffff"/>' +
+    '<rect x="86" y="144" width="9" height="26" rx="3" fill="#ffffff"/><rect x="108" y="144" width="9" height="26" rx="3" fill="#ffffff"/>' +
+    '<text x="99" y="138" font-family="Arial, sans-serif" font-size="112" font-weight="700" fill="#ffffff" text-anchor="middle">B</text>' +
+    '</svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
@@ -901,6 +926,8 @@ textarea{resize:vertical; min-height:64px; line-height:1.7}
     plane: uri(plane),
     sugar: uri(sugar),
     scale: uri(scale),
+    calendar: uri(calendar),
+    bitcoin: uri(bitcoin),
   };
 })(window);
 
@@ -1497,6 +1524,7 @@ window.CAROUSEL_PRESET = {
     if (!PRESET || !PRESET.states || !PRESET.states[t]) return null;
     var s = JSON.parse(JSON.stringify(PRESET.states[t]));
     s.template = t;
+    s._pv = PRESET.version || null;
     (s.cards || []).forEach(function (c, i) { if (!c.id) c.id = 'p' + i + Math.random().toString(36).slice(2, 6); });
     return s;
   }
@@ -1535,6 +1563,8 @@ window.CAROUSEL_PRESET = {
       if (!raw) return null;
       var s = JSON.parse(raw);
       s.template = t;
+      // 預設主題有更新版本（_pv 不同）→ 丟棄舊存檔，改用新內容
+      if (PRESET && PRESET.version && s._pv !== PRESET.version) return null;
       return s;
     } catch (e) { return null; }
   }
