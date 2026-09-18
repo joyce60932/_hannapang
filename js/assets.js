@@ -144,6 +144,15 @@
     '<text x="99" y="138" font-family="Arial, sans-serif" font-size="112" font-weight="700" fill="#ffffff" text-anchor="middle">B</text>' +
     '</svg>';
 
+  // 公事包（勞動市場／工作）
+  var briefcase =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="200" viewBox="0 0 220 200" fill="none">' +
+    '<path d="M82 74 v-14 a12 12 0 0 1 12 -12 h32 a12 12 0 0 1 12 12 v14" fill="none" stroke="#4b7d8b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<rect x="30" y="72" width="160" height="106" rx="16" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="5"/>' +
+    '<line x1="30" y1="112" x2="190" y2="112" stroke="#4b7d8b" stroke-width="4" opacity="0.5"/>' +
+    '<rect x="98" y="104" width="24" height="18" rx="4" fill="#4b7d8b"/>' +
+    '</svg>';
+
   global.ART = {
     bubbleTea: uri(bubbleTea),
     money: uri(money),
@@ -155,5 +164,6 @@
     scale: uri(scale),
     calendar: uri(calendar),
     bitcoin: uri(bitcoin),
+    briefcase: uri(briefcase),
   };
 })(window);
