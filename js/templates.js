@@ -105,8 +105,9 @@
   .bcard .b-statnote{margin-top:18px; font-size:26px; line-height:1.7; color:#adaba4;}
 
   /* CTA / 結尾 */
-  .bcard .b-cta-title{font-size:64px; font-weight:400; line-height:1.4; color:#1a1a1a;}
-  .bcard .b-cta-note{margin-top:34px; font-size:29px; line-height:1.8; color:#8f8d86;}
+  .bcard .b-cta-img{width:100%; height:300px; margin-bottom:40px;}
+  .bcard .b-cta-title{font-size:58px; font-weight:400; line-height:1.4; color:#1a1a1a;}
+  .bcard .b-cta-note{margin-top:30px; font-size:27px; line-height:1.85; color:#5f5d57;}
   `;
 
   function bImg(src, cls, emptyLabel) {
@@ -161,6 +162,7 @@
     } else if (type === 'cta') {
       main =
         '<div class="b-main">' +
+          (card.img ? bImg(card.img, 'b-cta-img') : '') +
           '<div class="b-cta-title">' + fmtText(card.title) + '</div>' +
           (card.note ? '<div class="b-cta-note">' + fmtText(card.note) + '</div>' : '') +
         '</div>';
@@ -342,6 +344,7 @@
         }
         if (type === 'cta') {
           return [
+            { key: 'img', label: '圖片（每頁可放，可留空）', kind: 'image', imageMode: 'transparent' },
             { key: 'title', label: '大標（可換行）', kind: 'textarea' },
             { key: 'note', label: '說明（可換行）', kind: 'textarea' },
           ];
@@ -359,7 +362,7 @@
           return { id: uid(), type: type, leftImg: '', rightImg: '', leftLabel: '', leftPrice: '', leftCap: '同一筆預算', leftBig: '', rightLabel: '', rightPrice: '', rightCap: '可以換成', rightBig: '', note: '' };
         }
         if (type === 'stat') return { id: uid(), type: type, img: '', kicker: '', big: '', label: '', note: '' };
-        if (type === 'cta') return { id: uid(), type: type, title: '', note: '' };
+        if (type === 'cta') return { id: uid(), type: type, img: '', title: '', note: '' };
         return { id: uid(), type: type, img: '', title: '', price: '', note: '' };
       },
       titlePreview: function (card) {
