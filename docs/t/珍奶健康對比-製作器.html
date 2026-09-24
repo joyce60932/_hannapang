@@ -1,0 +1,1998 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>輪播貼文製作器 — HANNA STORY</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+/*
+ * app.css — 製作器介面（外框 UI）樣式。
+ * 卡片本身的樣式在 js/card-style.js 的 CARD_CSS，這裡只管工具的操作介面。
+ * 走跟模板一致的暗色 + 鵝黃金調性。
+ */
+
+:root{
+  --gold:#f6dfa3;
+  --bg:#0e0e0e;
+  --panel:#161513;
+  --panel-2:#1d1c19;
+  --line:rgba(246,223,163,.16);
+  --text:#ece7dc;
+  --muted:#9a9482;
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Noto Sans TC',system-ui,sans-serif;
+  line-height:1.6;
+}
+
+/* ── 頂欄 ── */
+.app-header{
+  position:sticky; top:0; z-index:10;
+  display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+  padding:14px 22px;
+  background:rgba(14,14,14,.92);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(8px);
+}
+.app-header h1{
+  font-size:18px; font-weight:700; letter-spacing:.04em;
+}
+.app-header h1 .mark{color:var(--gold)}
+.app-header .sub{font-size:12px;color:var(--muted)}
+.app-header .spacer{flex:1}
+.app-header .save-state{font-size:12px;color:var(--muted)}
+.tpl-pick{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.tpl-pick select{width:auto;padding:6px 10px;font-size:13px;color:var(--text)}
+
+/* ── 主要版面：左編輯 右預覽 ── */
+.layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,560px);
+  gap:0;
+  align-items:start;
+}
+.editor{
+  padding:22px;
+  border-right:1px solid var(--line);
+  min-height:calc(100vh - 55px);
+}
+.preview-pane{
+  position:sticky; top:55px;
+  height:calc(100vh - 55px);
+  overflow:auto;
+  padding:22px;
+  display:flex; flex-direction:column; align-items:center; gap:16px;
+  background:#111;
+}
+
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .editor{border-right:none;border-bottom:1px solid var(--line);min-height:auto}
+  .preview-pane{position:static;height:auto}
+}
+
+/* ── 區塊卡 ── */
+.section{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:16px 18px;
+  margin-bottom:18px;
+}
+.section > h2{
+  font-size:13px; font-weight:700; letter-spacing:.14em;
+  color:var(--gold); text-transform:uppercase;
+  margin-bottom:14px;
+}
+
+/* ── 表單 ── */
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+.field label{
+  display:block; font-size:12px; color:var(--muted);
+  margin-bottom:5px; letter-spacing:.03em;
+}
+.field .hint{color:var(--gold);opacity:.75}
+input[type=text], textarea, select{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  border-radius:9px;
+  color:var(--text);
+  font-family:inherit; font-size:14px;
+  padding:9px 11px;
+  transition:border-color .15s;
+}
+input[type=text]:focus, textarea:focus, select:focus{
+  outline:none; border-color:rgba(246,223,163,.55);
+}
+textarea{resize:vertical; min-height:64px; line-height:1.7}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* ── 卡片列表 ── */
+.card-item{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:14px;
+  margin-bottom:14px;
+  overflow:hidden;
+}
+.card-item.active{border-color:rgba(246,223,163,.55)}
+.card-head{
+  display:flex; align-items:center; gap:10px;
+  padding:12px 14px;
+  cursor:pointer;
+  user-select:none;
+}
+.card-head .idx{
+  width:26px;height:26px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(246,223,163,.12);color:var(--gold);
+  font-size:12px;font-weight:700;flex-shrink:0;
+}
+.card-head .kind{
+  font-size:11px;color:#111;background:var(--gold);
+  padding:2px 8px;border-radius:999px;font-weight:700;flex-shrink:0;
+}
+.card-head .kind.inner{background:rgba(246,223,163,.25);color:var(--gold)}
+.card-head .title-preview{
+  flex:1;font-size:13px;color:var(--muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.card-head .chevron{color:var(--muted);font-size:12px;transition:transform .2s}
+.card-item.open .chevron{transform:rotate(90deg)}
+.card-body{display:none;padding:4px 14px 16px;border-top:1px solid var(--line)}
+.card-item.open .card-body{display:block}
+
+/* ── 照片上傳 ── */
+.photo-slot{
+  display:flex;gap:12px;align-items:center;
+  margin-bottom:12px;
+}
+.photo-thumb{
+  width:72px;height:90px;border-radius:8px;flex-shrink:0;
+  background:#000 center/cover no-repeat;
+  border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--muted);font-size:11px;text-align:center;
+}
+/* 去背 PNG 縮圖：淺色棋盤底，看得出透明 */
+.photo-thumb.transparent{
+  background-color:#e9e7e2;background-size:contain;
+  background-image:
+    linear-gradient(45deg,#cfccc4 25%,transparent 25%),
+    linear-gradient(-45deg,#cfccc4 25%,transparent 25%),
+    linear-gradient(45deg,transparent 75%,#cfccc4 75%),
+    linear-gradient(-45deg,transparent 75%,#cfccc4 75%);
+  background-position:0 0,0 6px,6px -6px,-6px 0;
+  background-size:12px 12px;
+}
+.photo-actions{flex:1;display:flex;flex-direction:column;gap:6px}
+.cut-opt{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer}
+.cut-opt input{width:auto;margin:0}
+
+/* ── 卡片工具列 ── */
+.card-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+/* ── 按鈕 ── */
+.btn{
+  font-family:inherit;font-size:13px;font-weight:600;
+  color:#111;background:var(--gold);
+  border:none;border-radius:999px;padding:8px 16px;cursor:pointer;
+  transition:opacity .15s, background .15s;
+}
+.btn:hover{opacity:.88}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid rgba(246,223,163,.5)}
+.btn.ghost:hover{background:rgba(246,223,163,.08)}
+.btn.danger{background:transparent;color:#e08a7a;border:1px solid rgba(224,138,122,.4)}
+.btn.danger:hover{background:rgba(224,138,122,.1)}
+.btn.sm{padding:6px 12px;font-size:12px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-file{position:relative;overflow:hidden}
+.btn-file input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer}
+
+/* ── 預覽舞台 ── */
+.stage-wrap{width:100%;display:flex;flex-direction:column;align-items:center;gap:14px}
+.stage-box{position:relative;overflow:hidden;margin:0 auto;border-radius:2px;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+.stage{position:relative;width:1080px;height:1350px;transform-origin:top left}
+.stage .slide{position:absolute;inset:0;display:none}
+.stage .slide.on{display:block}
+
+.pv-nav{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:center}
+.dots{display:flex;gap:6px}
+.dot{width:8px;height:8px;border-radius:50%;background:#444;cursor:pointer}
+.dot.on{background:var(--gold)}
+
+.note{
+  max-width:520px;font-size:12px;line-height:1.7;color:#c9b98a;
+  background:rgba(246,223,163,.08);border:1px solid rgba(246,223,163,.22);
+  border-radius:12px;padding:10px 14px;text-align:center;
+}
+
+.cap-preview{
+  max-width:520px;width:100%;background:#1b1b1b;border-radius:12px;
+  padding:14px 16px;white-space:pre-wrap;font-size:13px;line-height:1.7;color:#ddd;
+  border:1px solid var(--line);
+}
+
+.toast{
+  position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+  background:var(--gold);color:#111;font-size:13px;font-weight:600;
+  padding:10px 20px;border-radius:999px;
+  opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;
+  z-index:50;
+}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+.hint-block{
+  font-size:12px;color:var(--muted);line-height:1.7;
+  background:var(--panel-2);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;margin-bottom:14px;
+}
+.hint-block b{color:var(--gold)}
+
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <h1><span class="mark">✦</span> 輪播貼文製作器</h1>
+  <label class="tpl-pick">模板
+    <select id="tplSelect"></select>
+  </label>
+  <div class="spacer"></div>
+  <span class="save-state" id="saveState">已自動儲存</span>
+  <button class="btn ghost sm" id="btnExport">匯出獨立 HTML</button>
+  <button class="btn danger sm" id="btnReset">重設此模板</button>
+</header>
+
+<div class="layout">
+  <!-- ── 左：編輯 ── -->
+  <div class="editor">
+
+    <div class="hint-block" id="hintBlock"></div>
+
+    <!-- 全域設定（依模板動態產生）-->
+    <div class="section">
+      <h2>全域設定</h2>
+      <div id="settingsFields"></div>
+    </div>
+
+    <!-- 卡片列表 -->
+    <div class="section">
+      <h2>卡片內容</h2>
+      <div id="cardList"></div>
+      <div class="card-tools" id="addButtons"></div>
+    </div>
+
+    <!-- Caption -->
+    <div class="section">
+      <h2>Caption 文案</h2>
+      <div class="field">
+        <label>短斷句：一句一行、意群間空一行、最後接 CTA，末行放主題 hashtag</label>
+        <textarea id="setCaption" rows="10"></textarea>
+      </div>
+      <button class="btn ghost sm" id="btnFillHashtag">把主題 Hashtag 補到末行</button>
+    </div>
+
+  </div>
+
+  <!-- ── 右：預覽 ── -->
+  <div class="preview-pane">
+    <div class="stage-wrap">
+      <div class="stage-box" id="stageBox"><div class="stage" id="stage"></div></div>
+      <div class="pv-nav">
+        <button class="btn ghost sm" id="pvPrev">◀</button>
+        <div class="dots" id="dots"></div>
+        <button class="btn ghost sm" id="pvNext">▶</button>
+      </div>
+      <div class="pv-nav">
+        <button class="btn sm" id="dlOne">下載此張 PNG</button>
+        <button class="btn sm" id="dlAll">下載全部 PNG</button>
+        <button class="btn ghost sm" id="copyCap">複製整段 Caption</button>
+      </div>
+      <div class="note">⚠️ 下載要用 <b>Chrome / Safari 在本機開啟這個 HTML</b> 才有效，在對話預覽框內點按鈕沒反應是正常現象。</div>
+      <div class="cap-preview" id="capPreview"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- 依序載入（classic script，才能用 file:// 本機開啟） -->
+<script>
+/*
+ * card-style.js
+ * ------------------------------------------------------------------
+ * 「五月天真人照輪播模板」的卡片設計系統 CSS（規格 §2、§3、§7、§12）。
+ *
+ * 這段 CSS 是「唯一真相來源」：
+ *   - 製作器的即時預覽會把它注入 <style>
+ *   - 匯出的獨立 HTML 也直接內嵌同一份
+ * 兩邊共用同一份，保證「預覽長怎樣、下載出來就長怎樣」。
+ *
+ * 想換品牌色：只改下面的 --gold 一個變數即可，其餘結構不動（規格 §2）。
+ */
+(function (global) {
+  'use strict';
+
+  // Google Fonts：標題 Noto Serif TC 700／內文 Noto Sans TC 300、500（規格 §1）
+  global.CARD_FONTS_LINK =
+    '<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">';
+
+  // html2canvas 1.4.1（規格 §8）
+  global.HTML2CANVAS_SRC =
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+
+  // 卡片原生尺寸（規格 §1）
+  global.CARD_W = 1080;
+  global.CARD_H = 1350;
+
+  global.CARD_CSS = `
+  :root{
+    --gold:#f6dfa3;                 /* 鵝黃金：唯一主色（規格 §2） */
+    --gold-line:rgba(246,223,163,.8);
+    --gold-rule:rgba(246,223,163,.45);
+  }
+
+  /* 一張原生卡：1080×1350 純黑底、全出血（規格 §1、§3） */
+  .card{
+    position:relative; width:1080px; height:1350px;
+    background:#000; overflow:hidden;
+    font-family:'Noto Sans TC',sans-serif;
+  }
+  .card .photo{
+    position:absolute; top:0; left:0; width:1080px; height:1350px;
+    object-fit:cover; display:block;
+  }
+  /* 沒放照片時的占位（純預覽用；匯出前請補上照片） */
+  .card .photo-empty{
+    background:
+      radial-gradient(120% 80% at 50% 0%, #262015 0%, #000 70%);
+  }
+  .card .photo-empty::after{
+    content:'尚未放入照片'; position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    color:rgba(246,223,163,.35); font-size:34px; letter-spacing:.2em;
+  }
+
+  /* 遮罩（規格 §7） */
+  .card .grad{position:absolute; inset:0;}
+  .card.cover .grad{
+    background:linear-gradient(to bottom,
+      rgba(0,0,0,.22) 0%, transparent 14%, transparent 46%,
+      rgba(0,0,0,.20) 60%, rgba(0,0,0,.58) 78%,
+      rgba(0,0,0,.88) 90%, #000 100%);
+  }
+  .card.inner .grad{background:rgba(0,0,0,.52);}   /* 依照片亮度在 .45–.62 之間微調 */
+
+  /* 頂欄：01｜08 ── 系列英文標（規格 §3） */
+  .card .topbar{
+    position:absolute; top:52px; left:0; right:0; padding:0 66px;
+    display:flex; justify-content:space-between; align-items:center;
+    color:rgba(255,255,255,.85); font-size:23px; letter-spacing:.22em;
+    text-shadow:0 1px 8px rgba(0,0,0,.8);
+  }
+
+  /* Photo credit：僅非本人照才加，top:104px（規格 §3） */
+  .card .credit{
+    position:absolute; top:104px; left:0; right:0; padding:0 66px;
+    color:rgba(255,255,255,.72); font-size:19px; letter-spacing:.04em;
+    text-shadow:0 1px 8px rgba(0,0,0,.9);
+  }
+
+  /* 文字區：沉左下（規格 §3） */
+  .card .tz{
+    position:absolute; left:0; right:0; bottom:0; padding:0 66px 52px;
+    text-align:left;
+  }
+  .card.cta .tz{text-align:center;}   /* CTA 例外置中（規格 §4） */
+
+  /* 左側金線：錨點＋標題共用（規格 §3） */
+  .card .accent{
+    border-left:4px solid var(--gold-line);
+    padding-left:26px; margin-left:-30px; margin-bottom:24px;
+  }
+  .card.cta .accent{border:none; padding:0; margin:0 0 24px;}
+
+  .card .anchor{
+    font-family:'Noto Serif TC',serif; font-weight:700; font-size:60px;
+    color:var(--gold); line-height:1.25;
+  }
+  .card .head{
+    font-family:'Noto Serif TC',serif; font-weight:700; font-size:60px;
+    color:#fff; line-height:1.3; margin-top:6px;
+  }
+  .card .head em{color:var(--gold); font-style:normal;}   /* 關鍵字包 <em> → 鵝黃 */
+
+  .card .body{
+    font-family:'Noto Sans TC',sans-serif; font-weight:300; font-size:25px;
+    line-height:1.72; color:rgba(255,255,255,.86); margin-top:6px;
+  }
+  .card .rule{
+    width:80px; height:1px; background:var(--gold-rule); margin:26px 0;
+  }
+  .card.cta .rule{margin:26px auto;}
+
+  .card .close{
+    font-size:32px; font-weight:500; color:var(--gold); line-height:1.4;
+  }
+  .card .foot{
+    margin-top:26px; font-size:19px; color:rgba(255,255,255,.34);
+    letter-spacing:.05em;
+  }
+
+  /* 所有文字用雙層陰影浮字，取代暗色底板（規格 §3、§12） */
+  .card .anchor,.card .head,.card .body,.card .close,.card .foot,.card .credit{
+    text-shadow:0 1px 8px rgba(0,0,0,.95), 0 2px 26px rgba(0,0,0,.75);
+  }
+  `;
+})(window);
+
+</script>
+<script>
+/*
+ * render.js
+ * ------------------------------------------------------------------
+ * 由「一張卡的資料」產生卡片 HTML 字串。
+ * 製作器預覽與匯出的獨立 HTML 共用這支，確保兩邊長得一模一樣。
+ *
+ * 卡片資料格式：
+ *   {
+ *     type:  'cover' | 'inner' | 'cta',
+ *     anchor:'錨點（歌名／主題詞）',
+ *     head:  '標題，關鍵字用 *星號* 包住 → 會變鵝黃 <em>',
+ *     body:  '內文段落（換行會保留）',
+ *     close: '收尾句',
+ *     credit:'Photo from IG@xxx（非本人照才填，可留空）',
+ *     img:   'data:image/jpeg;base64,...'（可留空 → 顯示占位）
+ *   }
+ */
+(function (global) {
+  'use strict';
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // *關鍵字* → <em>關鍵字</em>（在跳脫之後套用，安全）
+  function emphasize(s) {
+    return s.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  }
+
+  function nl2br(s) {
+    return s.replace(/\r?\n/g, '<br>');
+  }
+
+  // 標題：跳脫 → 星號轉 em → 換行
+  function fmtHead(s) {
+    return nl2br(emphasize(esc(s)));
+  }
+  // 一般文字：跳脫 → 換行
+  function fmtText(s) {
+    return nl2br(esc(s));
+  }
+
+  function pad2(n) {
+    return String(n).padStart(2, '0');
+  }
+
+  /**
+   * @param {object} card   卡片資料
+   * @param {number} index  0-based
+   * @param {number} total  總張數
+   * @param {object} settings { seriesLabel, account }
+   * @param {boolean} active 是否為目前顯示中（加上 .on）
+   */
+  function renderCardHTML(card, index, total, settings, active) {
+    var type = card.type || 'inner';
+    var cls =
+      'slide ' +
+      (type === 'cover' ? 'cover' : type === 'cta' ? 'inner cta' : 'inner');
+    if (active) cls += ' on';
+
+    var num = pad2(index + 1) + '｜' + pad2(total);
+    var seriesLabel = esc(settings.seriesLabel || '');
+    var account = esc(settings.account || '');
+
+    var photo = card.img
+      ? '<img class="photo" src="' + card.img + '" alt="">'
+      : '<div class="photo photo-empty"></div>';
+
+    var credit = card.credit
+      ? '<div class="credit">' + fmtText(card.credit) + '</div>'
+      : '';
+
+    // 錨點 + 標題 共用左側金線
+    var anchorEl = card.anchor
+      ? '<div class="anchor">' + fmtHead(card.anchor) + '</div>'
+      : '';
+    var headEl = card.head
+      ? '<div class="head">' + fmtHead(card.head) + '</div>'
+      : '';
+    var accent =
+      anchorEl || headEl
+        ? '<div class="accent">' + anchorEl + headEl + '</div>'
+        : '';
+
+    var bodyEl = card.body ? '<div class="body">' + fmtText(card.body) + '</div>' : '';
+    var closeEl = card.close ? '<div class="close">' + fmtText(card.close) + '</div>' : '';
+
+    return (
+      '<div class="card ' + cls + '" data-i="' + index + '">' +
+        photo +
+        '<div class="grad"></div>' +
+        '<div class="topbar"><span>' + num + '</span><span>' + seriesLabel + '</span></div>' +
+        credit +
+        '<div class="tz">' +
+          accent +
+          bodyEl +
+          '<div class="rule"></div>' +
+          closeEl +
+          '<div class="foot">' + account + '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  global.renderCardHTML = renderCardHTML;
+})(window);
+
+</script>
+<script>
+/*
+ * photo.js
+ * ------------------------------------------------------------------
+ * 瀏覽器內把照片預裁成「精確 1080×1350（4:5）」+ 壓縮成 base64（規格 §6）。
+ *
+ * 為什麼在瀏覽器裁：html2canvas 會忽略 CSS object-fit，直式照直接塞會被拉扁。
+ * 所以照片框比例必須＝卡片比例。原本規格用 Python 預裁，這裡改用 canvas 裁，
+ * 效果一樣、還不用另外跑 Python。
+ *
+ *   - 太寬 → 裁左右（置中）
+ *   - 太高 → 裁上下，保留上半的臉（topBias 越小保留越多上半）
+ *   - JPEG 品質由高往下降，壓到 ≤ ~400KB（規格 §6 規則三）
+ */
+(function (global) {
+  'use strict';
+
+  var OUT_W = 1080;
+  var OUT_H = 1350;
+  var RATIO = OUT_W / OUT_H; // 0.8
+  var MAX_KB = 400;
+
+  function dataURLBytes(dataURL) {
+    // base64 內容長度 * 3/4 ≈ 位元組數
+    var i = dataURL.indexOf(',');
+    var b64 = i >= 0 ? dataURL.slice(i + 1) : dataURL;
+    return Math.floor((b64.length * 3) / 4);
+  }
+
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function () { reject(new Error('圖片讀取失敗')); };
+      img.src = src;
+    });
+  }
+
+  function fileToDataURL(file) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(fr.result); };
+      fr.onerror = function () { reject(new Error('檔案讀取失敗')); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * 把一個 File / dataURL 裁成 1080×1350 的 base64 JPEG。
+   * @param {File|string} input   File 物件或 dataURL 字串
+   * @param {number} topBias      裁上下時保留上半的比例（0~1，預設 0.10）
+   * @returns {Promise<string>}   data:image/jpeg;base64,...
+   */
+  function cropPhoto(input, topBias) {
+    if (topBias == null) topBias = 0.10;
+
+    var srcPromise =
+      typeof input === 'string' ? Promise.resolve(input) : fileToDataURL(input);
+
+    return srcPromise.then(loadImage).then(function (im) {
+      var W = im.naturalWidth;
+      var H = im.naturalHeight;
+      var sx, sy, sw, sh;
+
+      if (W / H > RATIO) {
+        // 太寬 → 裁左右
+        sw = Math.round(H * RATIO);
+        sh = H;
+        sx = Math.round((W - sw) * 0.5);
+        sy = 0;
+      } else {
+        // 太高 → 裁上下，保留上半的臉
+        sw = W;
+        sh = Math.round(W / RATIO);
+        sx = 0;
+        sy = Math.round((H - sh) * topBias);
+      }
+
+      var canvas = document.createElement('canvas');
+      canvas.width = OUT_W;
+      canvas.height = OUT_H;
+      var ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(im, sx, sy, sw, sh, 0, 0, OUT_W, OUT_H);
+
+      // 品質由 0.92 往下降，壓到 ≤ 400KB
+      var q = 0.92;
+      var out = canvas.toDataURL('image/jpeg', q);
+      while (dataURLBytes(out) / 1024 > MAX_KB && q > 0.4) {
+        q -= 0.07;
+        out = canvas.toDataURL('image/jpeg', q);
+      }
+      return out;
+    });
+  }
+
+  global.cropPhoto = cropPhoto;
+
+  /**
+   * 極簡白模板用：把去背 PNG 等比縮到 maxDim 內、保留透明背景、輸出 PNG。
+   * 不裁切（產品/物件圖要完整），太大就再縮一級。
+   * @param {File|string} input
+   * @param {number} maxDim 最長邊上限（預設 1000）
+   * @returns {Promise<string>} data:image/png;base64,...
+   */
+  function fitPhoto(input, maxDim) {
+    if (maxDim == null) maxDim = 1000;
+    var srcPromise =
+      typeof input === 'string' ? Promise.resolve(input) : fileToDataURL(input);
+
+    return srcPromise.then(loadImage).then(function (im) {
+      function renderAt(dim) {
+        var W = im.naturalWidth, H = im.naturalHeight;
+        var scale = Math.min(1, dim / Math.max(W, H));
+        var w = Math.max(1, Math.round(W * scale));
+        var h = Math.max(1, Math.round(H * scale));
+        var canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        var ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.clearRect(0, 0, w, h);           // 保留透明
+        ctx.drawImage(im, 0, 0, w, h);
+        return canvas.toDataURL('image/png');
+      }
+      var dim = maxDim;
+      var out = renderAt(dim);
+      // PNG 無法調品質，太大就縮尺寸（上限 ~700KB）
+      while (dataURLBytes(out) / 1024 > 700 && dim > 500) {
+        dim -= 150;
+        out = renderAt(dim);
+      }
+      return out;
+    });
+  }
+
+  global.fitPhoto = fitPhoto;
+
+  /**
+   * 一鍵去背（適合「單色/白底」商品照）。
+   * 從四邊往內 flood fill，把與背景色相近、且和邊緣相連的像素設為透明，
+   * 主體內部的白色不會被誤刪；邊緣做一階羽化。
+   * 對灰牆、複雜背景效果有限（需要真正的去背 App）。
+   * @param {File|string} input
+   * @param {object} opts { maxDim=1000, tolerance=48 }
+   * @returns {Promise<string>} 透明 PNG data URI
+   */
+  function removeSolidBg(input, opts) {
+    opts = opts || {};
+    var maxDim = opts.maxDim || 1000;
+    var tol = opts.tolerance || 48;
+    var tol2 = tol + 34;                       // 羽化外緣
+    var srcPromise = typeof input === 'string' ? Promise.resolve(input) : fileToDataURL(input);
+
+    return srcPromise.then(loadImage).then(function (im) {
+      var scale = Math.min(1, maxDim / Math.max(im.naturalWidth, im.naturalHeight));
+      var w = Math.max(1, Math.round(im.naturalWidth * scale));
+      var h = Math.max(1, Math.round(im.naturalHeight * scale));
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(im, 0, 0, w, h);
+      var id = ctx.getImageData(0, 0, w, h);
+      var d = id.data;
+      var N = w * h;
+
+      // 背景色 = 四角平均
+      function rgbAt(p) { var i = p * 4; return [d[i], d[i + 1], d[i + 2]]; }
+      var cs = [rgbAt(0), rgbAt(w - 1), rgbAt((h - 1) * w), rgbAt(N - 1)];
+      var bg = [0, 0, 0];
+      cs.forEach(function (c) { bg[0] += c[0]; bg[1] += c[1]; bg[2] += c[2]; });
+      bg = [bg[0] / 4, bg[1] / 4, bg[2] / 4];
+      function distP(p) {
+        var i = p * 4, dr = d[i] - bg[0], dg = d[i + 1] - bg[1], db = d[i + 2] - bg[2];
+        return Math.sqrt(dr * dr + dg * dg + db * db);
+      }
+
+      var stateArr = new Uint8Array(N);         // 0 未定, 1 背景(透明)
+      var stack = [];
+      function seed(x, y) { var p = y * w + x; if (!stateArr[p] && distP(p) < tol) { stateArr[p] = 1; stack.push(p); } }
+      for (var x = 0; x < w; x++) { seed(x, 0); seed(x, h - 1); }
+      for (var y = 0; y < h; y++) { seed(0, y); seed(w - 1, y); }
+      while (stack.length) {
+        var p = stack.pop(); var px = p % w, py = (p - px) / w;
+        if (px > 0) { var l = p - 1; if (!stateArr[l] && distP(l) < tol) { stateArr[l] = 1; stack.push(l); } }
+        if (px < w - 1) { var r = p + 1; if (!stateArr[r] && distP(r) < tol) { stateArr[r] = 1; stack.push(r); } }
+        if (py > 0) { var u = p - w; if (!stateArr[u] && distP(u) < tol) { stateArr[u] = 1; stack.push(u); } }
+        if (py < h - 1) { var dn = p + w; if (!stateArr[dn] && distP(dn) < tol) { stateArr[dn] = 1; stack.push(dn); } }
+      }
+
+      for (var q = 0; q < N; q++) {
+        var i4 = q * 4;
+        if (stateArr[q] === 1) { d[i4 + 3] = 0; continue; }
+        var dd = distP(q);
+        if (dd < tol2) {                          // 邊緣羽化：靠近背景且鄰接透明區
+          var qx = q % w, qy = (q - qx) / w, adj = false;
+          if (qx > 0 && stateArr[q - 1] === 1) adj = true;
+          else if (qx < w - 1 && stateArr[q + 1] === 1) adj = true;
+          else if (qy > 0 && stateArr[q - w] === 1) adj = true;
+          else if (qy < h - 1 && stateArr[q + w] === 1) adj = true;
+          if (adj) {
+            var a = Math.round(((dd - tol) / (tol2 - tol)) * 255);
+            d[i4 + 3] = Math.max(0, Math.min(255, a));
+          }
+        }
+      }
+
+      ctx.putImageData(id, 0, 0);
+      var out = canvas.toDataURL('image/png');
+      // 太大再縮一次（透明 PNG 用 fitPhoto 二次壓）
+      if (dataURLBytes(out) / 1024 > 700) return fitPhoto(out, 800);
+      return out;
+    });
+  }
+
+  global.removeSolidBg = removeSolidBg;
+})(window);
+
+</script>
+<script>
+/*
+ * assets.js — 內建向量插圖（SVG，透明去背，data URI）
+ * ------------------------------------------------------------------
+ * 給模板 B 當預設圖片用。全部自繪、無版權、透明背景、可縮放、體積小、完全自足。
+ * 使用者之後可用真實去背 PNG 覆蓋。
+ */
+(function (global) {
+  'use strict';
+
+  function uri(svg) {
+    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+  }
+
+  // 手搖飲杯（扁平插畫風：漸層奶茶 + 珍珠 + 粗吸管）
+  var bubbleTea =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="380" viewBox="0 0 300 380" fill="none">' +
+    '<defs><linearGradient id="tea" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#e8cca7"/><stop offset="0.55" stop-color="#d2a675"/><stop offset="1" stop-color="#bd8a55"/>' +
+    '</linearGradient></defs>' +
+    '<ellipse cx="150" cy="362" rx="92" ry="15" fill="#000000" opacity="0.08"/>' +
+    '<path d="M70 72 L230 72 L214 340 Q212 352 200 352 L100 352 Q88 352 86 340 Z" fill="#ffffff" stroke="#33302b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<path d="M79 152 L221 152 L214 340 Q212 352 200 352 L100 352 Q88 352 86 340 Z" fill="url(#tea)"/>' +
+    '<rect x="79" y="150" width="142" height="11" rx="3" fill="#f1e4d0"/>' +
+    '<g fill="#241a14">' +
+    '<circle cx="108" cy="338" r="12"/><circle cx="130" cy="341" r="12"/><circle cx="152" cy="338" r="12"/><circle cx="174" cy="341" r="12"/><circle cx="196" cy="337" r="12"/>' +
+    '<circle cx="119" cy="323" r="12"/><circle cx="141" cy="324" r="12"/><circle cx="163" cy="323" r="12"/><circle cx="185" cy="323" r="12"/>' +
+    '<circle cx="130" cy="309" r="11"/><circle cx="152" cy="309" r="11"/><circle cx="174" cy="309" r="11"/>' +
+    '</g>' +
+    '<rect x="152" y="26" width="20" height="128" rx="10" transform="rotate(11 162 90)" fill="#4a3b30"/>' +
+    '<path d="M70 72 L230 72 L214 340 Q212 352 200 352 L100 352 Q88 352 86 340 Z" fill="none" stroke="#33302b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<ellipse cx="150" cy="72" rx="80" ry="14" fill="#ffffff" stroke="#33302b" stroke-width="5"/>' +
+    '</svg>';
+
+  // 千元鈔扇（一疊鈔票展開，藍綠色系；風格化、非真鈔複製）
+  var money = (function () {
+    var notes = '';
+    var angles = [-46, -27.5, -9, 9, 27.5, 46];
+    angles.forEach(function (a) {
+      notes +=
+        '<g transform="rotate(' + a + ' 170 258)">' +
+        '<rect x="94" y="44" width="152" height="76" rx="9" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="4"/>' +
+        '<rect x="104" y="54" width="132" height="56" rx="6" fill="none" stroke="#6ea3b0" stroke-width="2"/>' +
+        '<circle cx="128" cy="82" r="17" fill="#8bc0cd" stroke="#4b7d8b" stroke-width="2"/>' +
+        '<text x="205" y="90" font-family="Arial, sans-serif" font-size="26" font-weight="700" fill="#33616e" text-anchor="middle">1000</text>' +
+        '</g>';
+    });
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="340" height="300" viewBox="0 0 340 300" fill="none">' +
+      '<ellipse cx="170" cy="286" rx="96" ry="12" fill="#000000" opacity="0.07"/>' +
+      notes + '</svg>';
+  })();
+
+  // 錢幣成長（上升箭頭 + 遞增金幣）
+  var coinGrowth =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240" viewBox="0 0 240 240" fill="none">' +
+    '<path d="M30 205 L110 150 L200 70" stroke="#2f2b26" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M176 70 L200 70 L200 94" stroke="#2f2b26" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<g stroke="#9a7b32" stroke-width="4">' +
+    '<circle cx="58" cy="200" r="30" fill="#e0be6a"/><circle cx="120" cy="158" r="30" fill="#e0be6a"/><circle cx="184" cy="112" r="30" fill="#e0be6a"/>' +
+    '</g>' +
+    '<g stroke="#9a7b32" stroke-width="3" fill="none">' +
+    '<circle cx="58" cy="200" r="20"/><circle cx="120" cy="158" r="20"/><circle cx="184" cy="112" r="20"/></g>' +
+    '</svg>';
+
+  // 撲滿存錢
+  var piggy =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="260" height="230" viewBox="0 0 260 230" fill="none">' +
+    '<path d="M40 120 Q40 70 110 66 Q140 40 150 62 Q200 66 214 110 Q236 112 236 132 Q236 150 214 150 Q206 176 176 188 L178 208 Q178 214 172 214 L154 214 Q148 214 148 208 L146 196 Q120 200 96 194 L94 208 Q94 214 88 214 L70 214 Q64 214 64 208 L66 184 Q46 166 44 140 Q30 138 30 126 Q30 120 40 120 Z" fill="#e7d4c4" stroke="#2f2b26" stroke-width="5" stroke-linejoin="round"/>' +
+    '<circle cx="196" cy="120" r="7" fill="#2f2b26"/>' +
+    '<rect x="96" y="74" width="52" height="9" rx="4" transform="rotate(-8 122 78)" fill="#2f2b26"/>' +
+    '<g stroke="#9a7b32" stroke-width="4"><circle cx="122" cy="34" r="20" fill="#e0be6a"/></g>' +
+    '<line x1="122" y1="52" x2="122" y2="66" stroke="#9a7b32" stroke-width="4"/>' +
+    '</svg>';
+
+  // 沙漏（時間）
+  var hourglass =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="264" viewBox="0 0 200 264" fill="none">' +
+    '<rect x="32" y="18" width="136" height="15" rx="7" fill="#8a6d3a"/>' +
+    '<rect x="32" y="231" width="136" height="15" rx="7" fill="#8a6d3a"/>' +
+    '<path d="M52 33 L148 33 L100 132 Z" fill="#f1ede6" stroke="#8a6d3a" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M100 132 L52 231 L148 231 Z" fill="#f1ede6" stroke="#8a6d3a" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M72 74 L128 74 L100 132 Z" fill="#e0be6a"/>' +
+    '<path d="M62 231 L138 231 L100 184 Z" fill="#e0be6a"/>' +
+    '<line x1="100" y1="132" x2="100" y2="196" stroke="#e0be6a" stroke-width="4"/>' +
+    '</svg>';
+
+  // 紙飛機（出國／旅行）
+  var plane =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="210" viewBox="0 0 240 210" fill="none">' +
+    '<path d="M24 148 Q74 150 112 128" stroke="#c3c0ba" stroke-width="3" stroke-dasharray="2 11" stroke-linecap="round"/>' +
+    '<path d="M28 118 L214 38 L112 128 Z" fill="#c9e4ea" stroke="#4b7d8b" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M214 38 L124 178 L112 128 Z" fill="#8bc0cd" stroke="#4b7d8b" stroke-width="4" stroke-linejoin="round"/>' +
+    '<path d="M112 128 L124 178 L104 150 Z" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="4" stroke-linejoin="round"/>' +
+    '</svg>';
+
+  // 糖（方糖堆）
+  var sugar =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="210" viewBox="0 0 240 210" fill="none">' +
+    '<g fill="#ffffff" stroke="#c9b58a" stroke-width="4" stroke-linejoin="round">' +
+    '<rect x="42" y="132" width="52" height="52" rx="6"/><rect x="98" y="132" width="52" height="52" rx="6"/><rect x="154" y="132" width="52" height="52" rx="6"/>' +
+    '<rect x="70" y="80" width="52" height="52" rx="6"/><rect x="126" y="80" width="52" height="52" rx="6"/>' +
+    '<rect x="98" y="28" width="52" height="52" rx="6"/>' +
+    '</g>' +
+    '<g stroke="#e6d6b4" stroke-width="3" stroke-linecap="round">' +
+    '<line x1="54" y1="150" x2="70" y2="150"/><line x1="110" y1="150" x2="126" y2="150"/><line x1="166" y1="150" x2="182" y2="150"/>' +
+    '<line x1="82" y1="98" x2="98" y2="98"/><line x1="138" y1="98" x2="154" y2="98"/><line x1="110" y1="46" x2="126" y2="46"/>' +
+    '</g></svg>';
+
+  // 體重計
+  var scale =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="240" height="210" viewBox="0 0 240 210" fill="none">' +
+    '<rect x="38" y="44" width="164" height="134" rx="26" fill="#eceae4" stroke="#7a756c" stroke-width="5"/>' +
+    '<rect x="58" y="62" width="124" height="98" rx="16" fill="#ffffff" stroke="#7a756c" stroke-width="4"/>' +
+    '<path d="M80 142 A42 42 0 0 1 160 142" fill="none" stroke="#cfcabf" stroke-width="4"/>' +
+    '<g stroke="#b8b2a6" stroke-width="3" stroke-linecap="round">' +
+    '<line x1="84" y1="126" x2="92" y2="130"/><line x1="102" y1="112" x2="107" y2="120"/><line x1="120" y1="106" x2="120" y2="115"/><line x1="138" y1="112" x2="133" y2="120"/><line x1="156" y1="126" x2="148" y2="130"/>' +
+    '</g>' +
+    '<line x1="120" y1="142" x2="150" y2="112" stroke="#c94f4f" stroke-width="5" stroke-linecap="round"/>' +
+    '<circle cx="120" cy="142" r="7" fill="#7a756c"/>' +
+    '<rect x="70" y="178" width="18" height="14" rx="4" fill="#7a756c"/><rect x="152" y="178" width="18" height="14" rx="4" fill="#7a756c"/>' +
+    '</svg>';
+
+  // 行事曆（定期扣款）
+  var calendar =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="210" viewBox="0 0 220 210" fill="none">' +
+    '<rect x="26" y="36" width="168" height="150" rx="16" fill="#ffffff" stroke="#4b7d8b" stroke-width="5"/>' +
+    '<path d="M26 62 a16 16 0 0 1 16 -16 h136 a16 16 0 0 1 16 16 v14 h-168 Z" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<line x1="70" y1="24" x2="70" y2="52" stroke="#4b7d8b" stroke-width="9" stroke-linecap="round"/>' +
+    '<line x1="150" y1="24" x2="150" y2="52" stroke="#4b7d8b" stroke-width="9" stroke-linecap="round"/>' +
+    '<g fill="#d7e6ea">' +
+    '<circle cx="62" cy="104" r="7"/><circle cx="102" cy="104" r="7"/><circle cx="158" cy="104" r="7"/>' +
+    '<circle cx="62" cy="140" r="7"/><circle cx="158" cy="140" r="7"/>' +
+    '<circle cx="62" cy="166" r="7"/><circle cx="102" cy="166" r="7"/><circle cx="158" cy="166" r="7"/>' +
+    '</g>' +
+    '<circle cx="110" cy="140" r="28" fill="#e0be6a" stroke="#9a7b32" stroke-width="4"/>' +
+    '<path d="M98 140 l8 9 l17 -19" stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '</svg>';
+
+  // 比特幣幣（加密貨幣）
+  var bitcoin =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none">' +
+    '<circle cx="100" cy="100" r="82" fill="#e0be6a" stroke="#9a7b32" stroke-width="6"/>' +
+    '<rect x="86" y="30" width="9" height="26" rx="3" fill="#ffffff"/><rect x="108" y="30" width="9" height="26" rx="3" fill="#ffffff"/>' +
+    '<rect x="86" y="144" width="9" height="26" rx="3" fill="#ffffff"/><rect x="108" y="144" width="9" height="26" rx="3" fill="#ffffff"/>' +
+    '<text x="99" y="138" font-family="Arial, sans-serif" font-size="112" font-weight="700" fill="#ffffff" text-anchor="middle">B</text>' +
+    '</svg>';
+
+  // 公事包（勞動市場／工作）
+  var briefcase =
+    '<svg xmlns="http://www.w3.org/2000/svg" width="220" height="200" viewBox="0 0 220 200" fill="none">' +
+    '<path d="M82 74 v-14 a12 12 0 0 1 12 -12 h32 a12 12 0 0 1 12 12 v14" fill="none" stroke="#4b7d8b" stroke-width="5" stroke-linejoin="round"/>' +
+    '<rect x="30" y="72" width="160" height="106" rx="16" fill="#a9d2dc" stroke="#4b7d8b" stroke-width="5"/>' +
+    '<line x1="30" y1="112" x2="190" y2="112" stroke="#4b7d8b" stroke-width="4" opacity="0.5"/>' +
+    '<rect x="98" y="104" width="24" height="18" rx="4" fill="#4b7d8b"/>' +
+    '</svg>';
+
+  global.ART = {
+    bubbleTea: uri(bubbleTea),
+    money: uri(money),
+    coinGrowth: uri(coinGrowth),
+    piggy: uri(piggy),
+    hourglass: uri(hourglass),
+    plane: uri(plane),
+    sugar: uri(sugar),
+    scale: uri(scale),
+    calendar: uri(calendar),
+    bitcoin: uri(bitcoin),
+    briefcase: uri(briefcase),
+  };
+})(window);
+
+</script>
+<script>
+/*
+ * templates.js — 模板註冊表
+ * ------------------------------------------------------------------
+ * 每套模板定義：CSS、字型、卡片型態、編輯欄位 schema、render()、預設內容。
+ * 製作器（app.js）與匯出（export.js）都照這張表運作，之後要加第三套只要在這裡加一個物件。
+ *
+ *   A：黑金真人照（故事風）—— 滿版真人照 + 鵝黃金字，文字沉左下
+ *   B：極簡白對比（機會成本）—— 白底 + 去背產品圖 + 大數字，置中堆疊 / 左右 VS
+ */
+(function (global) {
+  'use strict';
+
+  // 共用文字工具
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function emphasize(s) { return s.replace(/\*([^*]+)\*/g, '<em>$1</em>'); }
+  function nl2br(s) { return s.replace(/\r?\n/g, '<br>'); }
+  function fmtText(s) { return nl2br(esc(s)); }
+  function fmtHead(s) { return nl2br(emphasize(esc(s))); }
+  function pad2(n) { return String(n).padStart(2, '0'); }
+
+  function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
+
+  // 取內建插圖（assets.js），沒有就回空字串
+  function art(name) { return (global.ART && global.ART[name]) || ''; }
+
+  // ================================================================
+  //  模板 B：極簡白對比
+  // ================================================================
+  var CSS_B = `
+  .bcard{
+    position:relative; width:1080px; height:1350px;
+    background:#f5f4f1; color:#1b1b1b;
+    font-family:'Noto Sans TC',sans-serif; overflow:hidden;
+  }
+  /* 頂部標語（每頁置中）*/
+  .bcard .b-top{
+    position:absolute; top:60px; left:0; right:0; text-align:center;
+    font-size:30px; font-weight:500; letter-spacing:.32em; color:#3a3a3a;
+  }
+  /* 右上頁碼 pill */
+  .bcard .b-page{
+    position:absolute; top:52px; right:56px;
+    background:#8b8b8b; color:#fff; border-radius:999px;
+    padding:7px 20px; font-size:26px; letter-spacing:.04em;
+  }
+  /* 中間主區：垂直置中 */
+  .bcard .b-main{
+    position:absolute; left:0; right:0; top:150px; bottom:230px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:0 80px; text-align:center;
+  }
+  /* 底部署名 */
+  .bcard .b-sign{
+    position:absolute; left:0; right:0; bottom:74px; text-align:center;
+  }
+  .bcard .b-rule{width:42px; height:1px; background:#c3c0ba; margin:0 auto 22px;}
+  .bcard .b-name{
+    font-family:'Noto Serif TC',serif; font-weight:500; font-size:30px;
+    letter-spacing:.36em; color:#2a2a2a; padding-left:.36em;
+  }
+  .bcard .b-foot{margin-top:14px; font-size:20px; color:#a2a2a2; letter-spacing:.05em;}
+
+  /* 去背圖 */
+  .bcard .b-photo{display:flex; align-items:center; justify-content:center;}
+  .bcard .b-photo img{max-width:100%; max-height:100%; object-fit:contain;}
+  .bcard .b-photo-empty{
+    border:1.5px dashed #ccc8c0; border-radius:16px; color:#b0aca3;
+    font-size:26px; letter-spacing:.1em; padding:40px;
+  }
+
+  /* 封面 */
+  .bcard .b-cover-img{width:100%; height:440px; margin-bottom:56px;}
+  .bcard .b-title{
+    font-size:70px; font-weight:400; line-height:1.34; color:#1a1a1a; letter-spacing:.02em;
+  }
+  .bcard .b-price{margin-top:30px; font-size:32px; font-weight:400; color:#8a8a8a; letter-spacing:.04em;}
+  .bcard .b-note{margin-top:30px; font-size:27px; line-height:1.7; color:#adaba4;}
+
+  /* 對比 */
+  .bcard .b-compare{position:relative; display:flex; width:100%; align-items:flex-start;}
+  .bcard .b-col{flex:1; text-align:center; padding:0 30px;}
+  .bcard .b-col-r{border-left:1px solid #dedbd4;}
+  .bcard .b-col .b-photo{height:300px; margin-bottom:34px;}
+  .bcard .b-label{font-size:33px; font-weight:500; color:#2a2a2a;}
+  .bcard .b-minirule{width:26px; height:1px; background:#cfccc5; margin:16px auto;}
+  .bcard .b-cprice{font-size:42px; font-weight:600; color:#1a1a1a;}
+  .bcard .b-cap{font-size:25px; color:#9a9a9a; margin-top:6px;}
+  .bcard .b-big{font-size:60px; font-weight:600; color:#1a1a1a; margin-top:4px;}
+  .bcard .b-vs{
+    position:absolute; left:50%; top:150px; transform:translate(-50%,-50%);
+    background:#f5f4f1; padding:8px 12px;
+    font-size:34px; font-weight:500; letter-spacing:.08em; color:#8a8a8a;
+  }
+  .bcard .b-compare-note{
+    margin-top:56px; font-size:27px; line-height:1.7; color:#9a9a9a; text-align:center; width:100%;
+  }
+
+  /* 單一大數字 */
+  .bcard .b-kicker{font-size:31px; font-weight:500; letter-spacing:.1em; color:#8a8a8a; margin-bottom:26px;}
+  .bcard .b-bignum{font-size:132px; font-weight:600; line-height:1.02; color:#141414; letter-spacing:.01em;}
+  .bcard .b-statlabel{margin-top:24px; font-size:35px; font-weight:400; color:#2f2f2f;}
+  .bcard .b-statnote{margin-top:18px; font-size:26px; line-height:1.7; color:#adaba4;}
+
+  /* CTA / 結尾 */
+  .bcard .b-cta-img{width:100%; height:300px; margin-bottom:40px;}
+  .bcard .b-cta-title{font-size:58px; font-weight:400; line-height:1.4; color:#1a1a1a;}
+  .bcard .b-cta-note{margin-top:30px; font-size:27px; line-height:1.85; color:#5f5d57;}
+  `;
+
+  function bImg(src, cls, emptyLabel) {
+    if (src) return '<div class="b-photo ' + cls + '"><img src="' + src + '" alt=""></div>';
+    return '<div class="b-photo ' + cls + ' b-photo-empty">' + esc(emptyLabel || '去背 PNG') + '</div>';
+  }
+
+  function renderB(card, index, total, settings, active) {
+    var type = card.type || 'cover';
+    var cls = 'slide bcard b-' + type + (active ? ' on' : '');
+    var top = settings.headerLabel
+      ? '<div class="b-top">' + fmtText(settings.headerLabel) + '</div>' : '';
+    var page = index > 0
+      ? '<div class="b-page">' + (index + 1) + '/' + total + '</div>' : '';
+
+    var main = '';
+    if (type === 'compare') {
+      main =
+        '<div class="b-main">' +
+          '<div class="b-compare">' +
+            '<div class="b-col b-col-l">' +
+              bImg(card.leftImg, 'b-col-photo', '左圖') +
+              '<div class="b-label">' + fmtText(card.leftLabel) + '</div>' +
+              '<div class="b-minirule"></div>' +
+              '<div class="b-cprice">' + fmtText(card.leftPrice) + '</div>' +
+              '<div class="b-cap">' + fmtText(card.leftCap) + '</div>' +
+              '<div class="b-minirule"></div>' +
+              '<div class="b-big">' + fmtText(card.leftBig) + '</div>' +
+            '</div>' +
+            '<div class="b-col b-col-r">' +
+              bImg(card.rightImg, 'b-col-photo', '右圖') +
+              '<div class="b-label">' + fmtText(card.rightLabel) + '</div>' +
+              '<div class="b-minirule"></div>' +
+              '<div class="b-cprice">' + fmtText(card.rightPrice) + '</div>' +
+              '<div class="b-cap">' + fmtText(card.rightCap) + '</div>' +
+              '<div class="b-minirule"></div>' +
+              '<div class="b-big">' + fmtText(card.rightBig) + '</div>' +
+            '</div>' +
+            '<div class="b-vs">VS.</div>' +
+          '</div>' +
+          (card.note ? '<div class="b-compare-note">' + fmtText(card.note) + '</div>' : '') +
+        '</div>';
+    } else if (type === 'stat') {
+      main =
+        '<div class="b-main">' +
+          (card.img ? bImg(card.img, 'b-cover-img') : '') +
+          (card.kicker ? '<div class="b-kicker">' + fmtText(card.kicker) + '</div>' : '') +
+          '<div class="b-bignum">' + fmtText(card.big) + '</div>' +
+          (card.label ? '<div class="b-statlabel">' + fmtText(card.label) + '</div>' : '') +
+          (card.note ? '<div class="b-statnote">' + fmtText(card.note) + '</div>' : '') +
+        '</div>';
+    } else if (type === 'cta') {
+      main =
+        '<div class="b-main">' +
+          (card.img ? bImg(card.img, 'b-cta-img') : '') +
+          '<div class="b-cta-title">' + fmtText(card.title) + '</div>' +
+          (card.note ? '<div class="b-cta-note">' + fmtText(card.note) + '</div>' : '') +
+        '</div>';
+    } else {
+      // cover
+      main =
+        '<div class="b-main">' +
+          bImg(card.img, 'b-cover-img') +
+          '<div class="b-title">' + fmtText(card.title) + '</div>' +
+          (card.price ? '<div class="b-price">' + fmtText(card.price) + '</div>' : '') +
+          (card.note ? '<div class="b-note">' + fmtText(card.note) + '</div>' : '') +
+        '</div>';
+    }
+
+    var sign =
+      '<div class="b-sign">' +
+        '<div class="b-rule"></div>' +
+        '<div class="b-name">' + esc(settings.signature || '') + '</div>' +
+        (settings.footNote ? '<div class="b-foot">' + fmtText(settings.footNote) + '</div>' : '') +
+      '</div>';
+
+    return '<div class="' + cls + '" data-i="' + index + '">' + top + page + main + sign + '</div>';
+  }
+
+  // ================================================================
+  //  預設內容
+  // ================================================================
+  function defaultStateA() {
+    return {
+      template: 'A',
+      settings: { seriesLabel: '幣圈媽媽 ✦', account: '@_hannapang', hashtag: '#複利的力量' },
+      caption:
+        '我不是要你什麼都別買，\n而是想讓你看見——\n那杯「才 150 元」的飲料，\n10 年後，其實是 80 幾萬。\n\n' +
+        '小錢不是小事，\n它只是還沒被你看見的複利。\n\n' +
+        '從今天起，\n留一杯的錢，給未來的自己。\n\n' +
+        '#龐玉涵 #幣圈媽媽 #複利的力量',
+      cards: [
+        { id: uid(), type: 'cover', anchor: '每天一杯手搖飲', head: '10 年，喝掉 *54 萬* 😱', body: '', close: '你少賺的，比這更多… →', credit: '', img: '' },
+        { id: uid(), type: 'inner', anchor: '才 150 元', head: '真正讓你*存不到錢*的', body: '一天才 150 元，你從來沒把它加起來過。\n讓你存不到錢的，從來不是大筆花費，而是那些「才 150 元」的小確幸。', close: '小錢，才是關鍵', credit: '', img: '' },
+        { id: uid(), type: 'inner', anchor: 'A ｜每天喝掉', head: '10 年後，剩 *0 元*', body: '💰 一天一杯約 150 元\n一個月：約 4,500 元\n一年：約 54,000 元\n10 年後：0 元', close: '只剩習慣（和體重 😅）', credit: '', img: '' },
+        { id: uid(), type: 'inner', anchor: 'B ｜存起來', head: '10 年存下 *54 萬*', body: '💰 一天少喝一杯，把錢存下來\n每月存 4,500 元\n10 年本金：540,000 元', close: '有存到，但錢只是「不動」', credit: '', img: '' },
+        { id: uid(), type: 'inner', anchor: 'C ｜拿去投資', head: '10 年滾出 *82 萬*', body: '💰 每月 4,500 元，假設年化 8%\n投入本金：540,000 元\n10 年後約：820,000 元\n（示意試算，投資有風險）', close: '同一杯的錢，多滾出 28 萬', credit: '', img: '' },
+        { id: uid(), type: 'inner', anchor: '我的選擇', head: '把其中*一杯*，換成未來', body: '我沒有戒掉所有小確幸，只是把「其中一杯」，換成投資未來的自己。\n① 每天一杯的錢 → 每月定期定額\n② 不痛不癢，卻能滾 10 年。', close: '差距，都是從「一杯」開始', credit: '', img: '' },
+        { id: uid(), type: 'cta', anchor: '換你了', head: '留一杯的錢，給*未來的自己*', body: '我把每個月的定期定額紀錄，都更新在這裡。\n想一起滾出下一個 10 年嗎？', close: '追蹤我，一起記錄 →', credit: '', img: '' },
+      ],
+    };
+  }
+
+  function defaultStateB() {
+    return {
+      template: 'B',
+      settings: {
+        headerLabel: '換個角度，看待花費',
+        signature: '@_hannapang',
+        footNote: '依本篇設定價格試算',
+        hashtag: '#複利的力量',
+      },
+      caption:
+        '我不是要你什麼都別買，\n而是想讓你看見——\n那杯「才 150 元」的飲料，\n10 年後，其實是 80 幾萬。\n\n' +
+        '小錢不是小事，\n它只是還沒被你看見的複利。\n\n' +
+        '從今天起，\n留一杯的錢，給未來的自己。\n\n' +
+        '#龐玉涵 #幣圈媽媽 #複利的力量',
+      cards: [
+        // 封面｜反常識具象鉤子（一杯 → 一台車）
+        { id: uid(), type: 'cover', img: art('bubbleTea'),
+          title: '每天一杯手搖飲\n10 年喝掉一台車 🚗',
+          price: 'NT$150／杯 · 10 年 = 82 萬',
+          note: '你喝掉的不是飲料\n是未來的一筆本金 →' },
+        // 揭穿單價｜反常識（150 → 324）
+        { id: uid(), type: 'stat', img: art('bubbleTea'),
+          kicker: '一杯手搖飲的真實代價', big: '324 元',
+          label: '把 150 元投資 10 年（年化 8%）的未來值',
+          note: '你以為 150，其實多付了一倍' },
+        // 對比 VS｜差距 + 倍數
+        { id: uid(), type: 'compare', leftImg: art('bubbleTea'), rightImg: art('money'),
+          leftLabel: '每天喝掉', leftPrice: 'NT$54,000／年', leftCap: '10 年後', leftBig: '0 元',
+          rightLabel: '拿去投資', rightPrice: '年化 8%', rightCap: '10 年後', rightBig: '82 萬',
+          note: '同一筆錢，差了 82 萬\n投資是「只存不投」的 1.5 倍' },
+        // 杯數震撼｜具象
+        { id: uid(), type: 'stat', img: art('bubbleTea'),
+          kicker: '10 年，你會喝掉', big: '3,650 杯',
+          label: '每天一杯 × 365 天 × 10 年',
+          note: '≈ 54 萬元，全部喝進肚子裡' },
+        // 投資結果
+        { id: uid(), type: 'stat', img: art('money'),
+          kicker: '同一筆錢拿去投資', big: '82 萬',
+          label: '每月 4,500 × 年化 8% × 10 年',
+          note: '（示意試算，年化會浮動、投資有風險）' },
+        // CTA
+        { id: uid(), type: 'cta',
+          title: '留一杯的錢\n給未來的自己',
+          note: '我把每月定期定額紀錄更新在這裡\n想一起滾出下一個 10 年嗎？' },
+      ],
+    };
+  }
+
+  // ================================================================
+  //  註冊表
+  // ================================================================
+  global.TEMPLATES = {
+    A: {
+      id: 'A',
+      name: '黑金真人照（故事風）',
+      css: global.CARD_CSS,
+      bg: '#000',
+      W: global.CARD_W, H: global.CARD_H,
+      types: [
+        { id: 'cover', label: '封面' },
+        { id: 'inner', label: '內頁' },
+        { id: 'cta', label: 'CTA' },
+      ],
+      settingsSchema: [
+        { key: 'seriesLabel', label: '系列英文標（頂欄右）', kind: 'text' },
+        { key: 'account', label: '帳號 ID（每張頁尾）', kind: 'text' },
+        { key: 'hashtag', label: '主題 Hashtag（Caption 末行）', kind: 'text' },
+      ],
+      fields: function () {
+        return [
+          { key: 'img', label: '照片（自動裁 1080×1350）', kind: 'image', imageMode: 'cover' },
+          { key: 'anchor', label: '錨點（歌名／主題詞）', kind: 'text' },
+          { key: 'head', label: '標題（關鍵字用 *星號* 包 → 變鵝黃）', kind: 'text' },
+          { key: 'body', label: '內文（可換行）', kind: 'textarea' },
+          { key: 'close', label: '收尾句', kind: 'text' },
+          { key: 'credit', label: 'Photo credit（非本人照才填，可留空）', kind: 'text' },
+        ];
+      },
+      newCard: function (type) {
+        return { id: uid(), type: type, anchor: '', head: '', body: '', close: '', credit: '', img: '' };
+      },
+      titlePreview: function (card) {
+        return ((card.anchor || '') + ' ' + (card.head || '')).replace(/\*/g, '').replace(/\n/g, ' ').trim();
+      },
+      render: global.renderCardHTML,
+      defaultState: defaultStateA,
+    },
+
+    B: {
+      id: 'B',
+      name: '極簡白對比（機會成本）',
+      css: CSS_B,
+      bg: '#f5f4f1',
+      W: 1080, H: 1350,
+      types: [
+        { id: 'cover', label: '封面' },
+        { id: 'compare', label: '對比 VS' },
+        { id: 'stat', label: '單一大數字' },
+        { id: 'cta', label: 'CTA / 結尾' },
+      ],
+      settingsSchema: [
+        { key: 'headerLabel', label: '頂部標語（每頁置中）', kind: 'text' },
+        { key: 'signature', label: '署名（底部）', kind: 'text' },
+        { key: 'footNote', label: '底部小字', kind: 'text' },
+        { key: 'hashtag', label: '主題 Hashtag（Caption 末行）', kind: 'text' },
+      ],
+      fields: function (type) {
+        if (type === 'compare') {
+          return [
+            { key: 'leftImg', label: '左：去背圖', kind: 'image', imageMode: 'transparent' },
+            { key: 'leftLabel', label: '左：名稱', kind: 'text' },
+            { key: 'leftPrice', label: '左：價格', kind: 'text' },
+            { key: 'leftCap', label: '左：說明（同一筆預算…）', kind: 'text' },
+            { key: 'leftBig', label: '左：大數字', kind: 'text' },
+            { key: 'rightImg', label: '右：去背圖', kind: 'image', imageMode: 'transparent' },
+            { key: 'rightLabel', label: '右：名稱', kind: 'text' },
+            { key: 'rightPrice', label: '右：價格', kind: 'text' },
+            { key: 'rightCap', label: '右：說明（可以換成…）', kind: 'text' },
+            { key: 'rightBig', label: '右：大數字', kind: 'text' },
+            { key: 'note', label: '底部註解（可換行）', kind: 'textarea' },
+          ];
+        }
+        if (type === 'stat') {
+          return [
+            { key: 'img', label: '去背圖（可留空）', kind: 'image', imageMode: 'transparent' },
+            { key: 'kicker', label: '小標（A｜每天喝掉…）', kind: 'text' },
+            { key: 'big', label: '大數字', kind: 'text' },
+            { key: 'label', label: '數字下方說明', kind: 'text' },
+            { key: 'note', label: '註解（可換行）', kind: 'textarea' },
+          ];
+        }
+        if (type === 'cta') {
+          return [
+            { key: 'img', label: '圖片（每頁可放，可留空）', kind: 'image', imageMode: 'transparent' },
+            { key: 'title', label: '大標（可換行）', kind: 'textarea' },
+            { key: 'note', label: '說明（可換行）', kind: 'textarea' },
+          ];
+        }
+        // cover
+        return [
+          { key: 'img', label: '去背主圖', kind: 'image', imageMode: 'transparent' },
+          { key: 'title', label: '大標（可換行）', kind: 'textarea' },
+          { key: 'price', label: '副標／價格', kind: 'text' },
+          { key: 'note', label: '小灰字（可換行）', kind: 'textarea' },
+        ];
+      },
+      newCard: function (type) {
+        if (type === 'compare') {
+          return { id: uid(), type: type, leftImg: '', rightImg: '', leftLabel: '', leftPrice: '', leftCap: '同一筆預算', leftBig: '', rightLabel: '', rightPrice: '', rightCap: '可以換成', rightBig: '', note: '' };
+        }
+        if (type === 'stat') return { id: uid(), type: type, img: '', kicker: '', big: '', label: '', note: '' };
+        if (type === 'cta') return { id: uid(), type: type, img: '', title: '', note: '' };
+        return { id: uid(), type: type, img: '', title: '', price: '', note: '' };
+      },
+      titlePreview: function (card) {
+        var t = card.title || card.big || card.kicker ||
+          ((card.leftLabel || '') + ' vs ' + (card.rightLabel || ''));
+        return String(t).replace(/\n/g, ' ').trim();
+      },
+      render: renderB,
+      defaultState: defaultStateB,
+    },
+  };
+
+  global.TEMPLATE_ORDER = ['A', 'B'];
+  global.newUid = uid;
+})(window);
+
+</script>
+<script>
+/*
+ * export.js
+ * ------------------------------------------------------------------
+ * 把目前的內容打包成一支「單一自足的 HTML」（規格 §12），支援多模板：
+ *   - 依 state.template 取對應模板的 CSS 與 render()
+ *   - 圖片 base64 內嵌、無任何外部路徑
+ *   - 可預覽、可導覽、可下載 1080×1350 PNG、可複製 Caption
+ */
+(function (global) {
+  'use strict';
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function buildStandaloneHTML(state) {
+    var tpl = global.TEMPLATES[state.template] || global.TEMPLATES.A;
+    var settings = state.settings;
+    var cards = state.cards;
+    var total = cards.length;
+    var bg = tpl.bg || '#000';
+
+    var stageInner = cards
+      .map(function (c, i) { return tpl.render(c, i, total, settings, i === 0); })
+      .join('\n');
+
+    var dots = cards
+      .map(function (_, i) { return '<div class="dot' + (i === 0 ? ' on' : '') + '"></div>'; })
+      .join('');
+
+    var caption = state.caption || '';
+    var nameSeed = settings.account || settings.signature || 'hanna';
+    var fileSeed = String(nameSeed).replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
+
+    var runtime =
+      "  var N = document.querySelectorAll('.slide').length;\n" +
+      "  var stage = document.getElementById('stage');\n" +
+      "  var cards = [].slice.call(document.querySelectorAll('.slide'));\n" +
+      "  var dotsEl = [].slice.call(document.querySelectorAll('.dot'));\n" +
+      "  var cur = 0;\n" +
+      "  function show(i){ cur=(i+N)%N; cards.forEach(function(c,k){c.classList.toggle('on',k===cur);});\n" +
+      "    dotsEl.forEach(function(d,k){d.classList.toggle('on',k===cur);}); }\n" +
+      "  document.getElementById('prev').onclick=function(){show(cur-1);};\n" +
+      "  document.getElementById('next').onclick=function(){show(cur+1);};\n" +
+      "  addEventListener('keydown',function(e){ if(e.key==='ArrowLeft')show(cur-1); if(e.key==='ArrowRight')show(cur+1); });\n" +
+      "  function fit(){ var s=Math.min((innerWidth-40)/1080,(innerHeight*0.72)/1350);\n" +
+      "    stage.style.transform='scale('+s+')'; document.getElementById('box').style.width=(1080*s)+'px'; document.getElementById('box').style.height=(1350*s)+'px'; }\n" +
+      "  addEventListener('resize',fit); fit();\n" +
+      "  function dl(cardEl, name){\n" +
+      "    return (document.fonts&&document.fonts.ready?document.fonts.ready:Promise.resolve()).then(function(){\n" +
+      "      var clone=cardEl.cloneNode(true);\n" +
+      "      Object.assign(clone.style,{position:'fixed',left:'-9999px',top:'0',transform:'none',display:'block'});\n" +
+      "      document.body.appendChild(clone);\n" +
+      "      return html2canvas(clone,{scale:1,backgroundColor:" + JSON.stringify(bg) + ",useCORS:true,logging:false}).then(function(canvas){\n" +
+      "        document.body.removeChild(clone);\n" +
+      "        return new Promise(function(r){canvas.toBlob(function(b){var a=document.createElement('a');\n" +
+      "          a.href=URL.createObjectURL(b);a.download=name;a.click();URL.revokeObjectURL(a.href);r();},'image/png');});\n" +
+      "      });\n" +
+      "    });\n" +
+      "  }\n" +
+      "  document.getElementById('dlOne').onclick=function(){ dl(cards[cur],'" + fileSeed + "_'+String(cur+1).padStart(2,'0')+'.png'); };\n" +
+      "  document.getElementById('dlAll').onclick=function(){ var p=Promise.resolve();\n" +
+      "    cards.forEach(function(c,i){ p=p.then(function(){return dl(c,'" + fileSeed + "_'+String(i+1).padStart(2,'0')+'.png');}); }); };\n" +
+      "  var cap=document.getElementById('cap'); cap.textContent=CAPTION;\n" +
+      "  document.getElementById('copyCap').onclick=function(){ navigator.clipboard.writeText(CAPTION).then(function(){\n" +
+      "    var b=document.getElementById('copyCap'); b.textContent='已複製 ✓'; setTimeout(function(){b.textContent='複製整段 Caption';},1500); }); };\n";
+
+    return (
+'<!DOCTYPE html>\n' +
+'<html lang="zh-Hant"><head>\n' +
+'<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n' +
+'<title>' + esc(settings.seriesLabel || settings.headerLabel || '輪播貼文') + '</title>\n' +
+global.CARD_FONTS_LINK + '\n' +
+'<script src="' + global.HTML2CANVAS_SRC + '"><\/script>\n' +
+'<style>\n' +
+'*{margin:0;padding:0;box-sizing:border-box}\n' +
+"body{background:#111;color:#eee;font-family:'Noto Sans TC',sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px}\n" +
+'#box{position:relative;overflow:hidden;margin:0 auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}\n' +
+'.stage{position:relative;width:1080px;height:1350px;transform-origin:top left}\n' +
+'.slide{position:absolute;inset:0;display:none}\n' +
+'.slide.on{display:block}\n' +
+tpl.css + '\n' +
+'.nav{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}\n' +
+".btn{font-family:'Noto Sans TC';font-size:15px;font-weight:500;color:#111;background:#f6dfa3;border:none;border-radius:999px;padding:11px 22px;cursor:pointer}\n" +
+'.ghost{background:transparent;color:#f6dfa3;border:1px solid rgba(246,223,163,.5)}\n' +
+'.dots{display:flex;gap:6px}.dot{width:8px;height:8px;border-radius:50%;background:#555}.dot.on{background:#f6dfa3}\n' +
+'.note{max-width:560px;font-size:13px;line-height:1.7;color:#c9b98a;background:rgba(246,223,163,.08);border:1px solid rgba(246,223,163,.22);border-radius:12px;padding:12px 16px;text-align:center}\n' +
+'.cap{max-width:560px;width:100%;background:#1b1b1b;border-radius:12px;padding:16px;white-space:pre-wrap;font-size:14px;line-height:1.7;color:#ddd}\n' +
+'</style></head><body>\n' +
+'  <div id="box"><div class="stage" id="stage">\n' + stageInner + '\n  </div></div>\n' +
+'  <div class="nav">\n' +
+'    <button class="btn ghost" id="prev">◀</button>\n' +
+'    <div class="dots" id="dots">' + dots + '</div>\n' +
+'    <button class="btn ghost" id="next">▶</button>\n' +
+'  </div>\n' +
+'  <div class="nav">\n' +
+'    <button class="btn" id="dlOne">下載此張</button>\n' +
+'    <button class="btn" id="dlAll">下載全部</button>\n' +
+'    <button class="btn ghost" id="copyCap">複製整段 Caption</button>\n' +
+'  </div>\n' +
+'  <div class="note">⚠️ 下載要用 <b>Chrome / Safari 在本機開啟這個 HTML</b> 才有效，在對話預覽框內點按鈕沒反應是正常現象。</div>\n' +
+'  <div class="cap" id="cap"></div>\n' +
+'<script>\n' +
+'  var CAPTION = ' + JSON.stringify(caption) + ';\n' +
+runtime +
+'<\/script></body></html>'
+    );
+  }
+
+  global.buildStandaloneHTML = buildStandaloneHTML;
+})(window);
+
+</script>
+<script>
+/*
+ * presets/health.js — 預設主題：〈每天一杯手搖飲，喝掉的不只是錢〉
+ * ------------------------------------------------------------------
+ * 手搖飲的機會成本 2.0：糖 / 熱量 / 體重 / 健康 vs 投資 + 健康 + 未來出國。
+ * 模板 B（極簡白對比）。打包時用 --preset presets/health.js 注入。
+ *
+ * 假設（皆示意、因人而異）：每天 1 杯、10 年 = 3,650 杯
+ *   糖：一杯全糖珍奶 ≈ 60g（≈12 顆方糖）→ 219,000 g = 219 公斤
+ *   熱量：一杯 ≈ 600 大卡 → 2,190,000 = 219 萬大卡
+ *   錢：每月 4,500（≈每天 150）、年化 8%、10 年 ≈ 82 萬
+ *   出國：82 萬 ÷ 8 萬（歐洲旅行/次）≈ 10 次
+ *   糖顆數：60g ÷ 5g ≈ 12 顆方糖/杯 × 3,650 杯 = 43,800 顆
+ */
+window.CAROUSEL_PRESET = {
+  ns: 'health',
+  active: 'B',
+  states: {
+    B: (function () {
+      var A = window.ART || {};
+      return {
+        template: 'B',
+        settings: {
+          headerLabel: '換個角度，看待花費',
+          signature: '@_hannapang',
+          footNote: '數字為示意估算，因人而異',
+          hashtag: '#把手搖飲換成未來',
+        },
+        caption:
+          '那杯「才 150 元」的手搖飲，\n你喝掉的，不只是錢。\n\n' +
+          '10 年 3,650 杯，\n是 219 公斤的糖、219 萬大卡，\n還有你沒發現的體重和血糖。\n\n' +
+          '如果把其中一杯，\n換成投資未來的自己——\n82 萬、更輕盈的身體，\n還有好幾趟出國的機會。\n\n' +
+          '同一杯的錢，\n可以喝掉，也可以飛出去。\n\n' +
+          '#龐玉涵 #幣圈媽媽 #把手搖飲換成未來',
+        cards: [
+          // 1 封面｜反常識具象鉤子
+          { id: 'h1', type: 'cover', img: A.bubbleTea || '',
+            title: '每天一杯手搖飲\n10 年喝掉 219 公斤糖 😱',
+            price: '＋ 219 萬大卡　＋ 說不定的脂肪肝',
+            note: '同一杯的錢，還能換一個更好的未來 →' },
+          // 2 糖（方糖顆數更誇張）
+          { id: 'h2', type: 'stat', img: A.sugar || '',
+            kicker: '10 年喝進的糖 =', big: '43,800 顆方糖',
+            label: '一杯 ≈ 12 顆方糖 × 3,650 杯（≈ 219 公斤）',
+            note: 'WHO 建議每天 <25g，一杯就超標 2 倍' },
+          // 3 熱量（體重計）
+          { id: 'h3', type: 'stat', img: A.scale || '',
+            kicker: '10 年多吃的熱量', big: '219 萬大卡',
+            label: '一杯 ≈ 600 大卡（一個便當）× 3,650 杯',
+            note: '若沒消耗，約每 12 天多胖 1 公斤的節奏' },
+          // 4 對比 VS｜喝掉 vs 換成投資
+          { id: 'h4', type: 'compare', leftImg: A.bubbleTea || '', rightImg: A.money || '',
+            leftLabel: '每天喝掉', leftPrice: '10 年後', leftCap: '你得到', leftBig: '0 元 + 219kg 糖',
+            rightLabel: '換成投資', rightPrice: '10 年後', rightCap: '你得到', rightBig: '82 萬 + 健康',
+            note: '同一杯的錢，兩種未來' },
+          // 5 出國（歐洲單價）
+          { id: 'h5', type: 'stat', img: A.plane || '',
+            kicker: '82 萬能做什麼', big: '玩遍歐洲 10 次',
+            label: '以歐洲旅行 ≈ 8 萬／次估算',
+            note: '同樣的錢，喝掉？還是飛出去？' },
+          // 6 我的選擇
+          { id: 'h6', type: 'cta',
+            title: '我把一杯\n換成投資 + 健康',
+            note: '① 每天那杯的錢 → 每月定期定額\n② 少一點糖，多一點未來\n真正的複利，是錢和身體一起變好。' },
+          // 7 CTA
+          { id: 'h7', type: 'cta',
+            title: '留一杯的錢\n也留住你的健康',
+            note: '追蹤我，一起把小錢變成未來 →' },
+        ],
+      };
+    })(),
+  },
+};
+
+</script>
+<script>
+/*
+ * app.js — 製作器主程式（多模板）
+ * ------------------------------------------------------------------
+ * 依 templates.js 的註冊表運作：全域設定、卡片欄位、預覽、下載都由模板 schema 驅動。
+ * 每套模板各自存一份內容（切換不會互相覆蓋）。
+ */
+(function () {
+  'use strict';
+
+  // 可選的「預設主題」：由打包後的單檔在載入前注入 window.CAROUSEL_PRESET
+  //   { ns:'timing', active:'B', states:{ B:{...state...} } }
+  // ns 讓不同主題的單檔各存各的 localStorage，不互相蓋。
+  var PRESET = (window.CAROUSEL_PRESET && typeof window.CAROUSEL_PRESET === 'object') ? window.CAROUSEL_PRESET : null;
+
+  var STORE_PREFIX = 'hanna_carousel_v3_' + (PRESET && PRESET.ns ? PRESET.ns + '_' : '');
+  var ACTIVE_KEY = 'hanna_active_v3' + (PRESET && PRESET.ns ? '_' + PRESET.ns : '');
+
+  function presetState(t) {
+    if (!PRESET || !PRESET.states || !PRESET.states[t]) return null;
+    var s = JSON.parse(JSON.stringify(PRESET.states[t]));
+    s.template = t;
+    s._pv = PRESET.version || null;
+    (s.cards || []).forEach(function (c, i) { if (!c.id) c.id = 'p' + i + Math.random().toString(36).slice(2, 6); });
+    return s;
+  }
+
+  var HINTS = {
+    A: '滿版真人照 + 鵝黃金字，文字沉左下。標題想讓關鍵字變<b>鵝黃</b>，用星號包住：<b>10 年喝掉 *54 萬*</b>。上傳照片會自動裁成 1080×1350。',
+    B: '白底 + 去背產品圖 + 大數字（機會成本／對比）。上傳圖片時勾「<b>自動去背（白底）</b>」，白底商品照會自動去背；灰牆／複雜背景建議先用去背 App。「對比 VS」頁左右各放一張圖與大數字；文字可換行。',
+  };
+
+  // 把模板 CSS 注入頁面（切換時替換）
+  var tplStyle = document.createElement('style');
+  document.head.appendChild(tplStyle);
+
+  // ── 狀態 ──
+  var activeTemplate = loadActive();
+  var state = loadState(activeTemplate) || presetState(activeTemplate) || window.TEMPLATES[activeTemplate].defaultState();
+  var cur = 0;
+  var openId = state.cards[0] && state.cards[0].id;
+
+  function tpl() { return window.TEMPLATES[state.template]; }
+
+  function loadActive() {
+    // 預設用「極簡白對比（模板 B）」——使用者偏好（見 CLAUDE.md）；有預設主題就用它指定的
+    var fallback = (PRESET && PRESET.active && window.TEMPLATES[PRESET.active]) ? PRESET.active : 'B';
+    try {
+      var a = localStorage.getItem(ACTIVE_KEY);
+      return (a && window.TEMPLATES[a]) ? a : fallback;
+    } catch (e) { return fallback; }
+  }
+  function saveActive() {
+    try { localStorage.setItem(ACTIVE_KEY, activeTemplate); } catch (e) {}
+  }
+  function loadState(t) {
+    try {
+      var raw = localStorage.getItem(STORE_PREFIX + t);
+      if (!raw) return null;
+      var s = JSON.parse(raw);
+      s.template = t;
+      // 預設主題有更新版本（_pv 不同）→ 丟棄舊存檔，改用新內容
+      if (PRESET && PRESET.version && s._pv !== PRESET.version) return null;
+      return s;
+    } catch (e) { return null; }
+  }
+  function save() {
+    var el = $('saveState');
+    try {
+      localStorage.setItem(STORE_PREFIX + state.template, JSON.stringify(state));
+      el.textContent = '已自動儲存';
+    } catch (e) {
+      try {
+        var stripped = JSON.parse(JSON.stringify(state));
+        stripped.cards.forEach(function (c) {
+          Object.keys(c).forEach(function (k) {
+            if (typeof c[k] === 'string' && c[k].indexOf('data:image') === 0) c[k] = '';
+          });
+        });
+        localStorage.setItem(STORE_PREFIX + state.template, JSON.stringify(stripped));
+        el.textContent = '已存文字（照片過大未存，請盡快匯出）';
+      } catch (e2) { el.textContent = '無法自動儲存'; }
+    }
+  }
+
+  // ── DOM 小工具 ──
+  function $(id) { return document.getElementById(id); }
+  function el(html) {
+    var t = document.createElement('template');
+    t.innerHTML = html.trim();
+    return t.content.firstChild;
+  }
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  var toastTimer;
+  function toast(msg) {
+    var t = $('toast');
+    t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove('on'); }, 1800);
+  }
+
+  // ================================================================
+  //  模板切換
+  // ================================================================
+  function buildTemplateSelect() {
+    var sel = $('tplSelect');
+    sel.innerHTML = '';
+    window.TEMPLATE_ORDER.forEach(function (id) {
+      var o = el('<option value="' + id + '">' + esc(window.TEMPLATES[id].name) + '</option>');
+      sel.appendChild(o);
+    });
+    sel.value = activeTemplate;
+    sel.addEventListener('change', function () {
+      switchTemplate(sel.value);
+    });
+  }
+
+  function switchTemplate(t) {
+    if (t === state.template) return;
+    save();                                  // 存目前模板
+    activeTemplate = t;
+    saveActive();
+    state = loadState(t) || presetState(t) || window.TEMPLATES[t].defaultState();
+    cur = 0;
+    openId = state.cards[0] && state.cards[0].id;
+    buildAll();
+    toast('已切換到「' + window.TEMPLATES[t].name + '」');
+  }
+
+  // ================================================================
+  //  編輯區
+  // ================================================================
+  function buildEditor() {
+    $('hintBlock').innerHTML = HINTS[state.template] || '';
+
+    // 全域設定
+    var sf = $('settingsFields');
+    sf.innerHTML = '';
+    tpl().settingsSchema.forEach(function (spec) {
+      sf.appendChild(settingsField(spec));
+    });
+
+    // Caption
+    $('setCaption').value = state.caption || '';
+
+    // 新增卡片按鈕（依模板型態）
+    var ab = $('addButtons');
+    ab.innerHTML = '';
+    tpl().types.forEach(function (ty) {
+      if (ty.id === 'cover') return;   // 封面通常只有一張，不放快速新增
+      var b = el('<button class="btn ghost sm">＋ ' + esc(ty.label) + '</button>');
+      b.addEventListener('click', function () {
+        var c = tpl().newCard(ty.id);
+        state.cards.push(c);
+        openId = c.id; cur = state.cards.length - 1;
+        onStructureChange();
+      });
+      ab.appendChild(b);
+    });
+
+    // 卡片列表
+    var list = $('cardList');
+    list.innerHTML = '';
+    state.cards.forEach(function (card, i) { list.appendChild(buildCardItem(card, i)); });
+  }
+
+  function settingsField(spec) {
+    var f = el('<div class="field"><label>' + esc(spec.label) + '</label></div>');
+    var input = el('<input type="text">');
+    input.value = (state.settings[spec.key] != null) ? state.settings[spec.key] : '';
+    input.addEventListener('input', function () {
+      state.settings[spec.key] = input.value;
+      buildPreview(); save();
+    });
+    f.appendChild(input);
+    return f;
+  }
+
+  function buildCardItem(card, i) {
+    var total = state.cards.length;
+    var isOpen = card.id === openId;
+    var typeLabel = (function () {
+      var ty = tpl().types.filter(function (t) { return t.id === card.type; })[0];
+      return ty ? ty.label : card.type;
+    })();
+    var kindCls = card.type === 'cover' ? '' : 'inner';
+
+    var item = el('<div class="card-item ' + (isOpen ? 'open ' : '') + (i === cur ? 'active' : '') + '"></div>');
+
+    var head = el(
+      '<div class="card-head">' +
+        '<span class="idx">' + (i + 1) + '</span>' +
+        '<span class="kind ' + kindCls + '">' + esc(typeLabel) + '</span>' +
+        '<span class="title-preview">' + esc(tpl().titlePreview(card) || '（空白）') + '</span>' +
+        '<span class="chevron">▶</span>' +
+      '</div>'
+    );
+    head.addEventListener('click', function () {
+      openId = (openId === card.id) ? null : card.id;
+      cur = i; buildEditor(); buildPreview();
+    });
+    item.appendChild(head);
+
+    var body = el('<div class="card-body"></div>');
+
+    // 類型
+    var fType = el('<div class="field"><label>類型</label><select></select></div>');
+    var sel = fType.querySelector('select');
+    tpl().types.forEach(function (ty) {
+      sel.appendChild(el('<option value="' + ty.id + '">' + esc(ty.label) + '</option>'));
+    });
+    sel.value = card.type;
+    sel.addEventListener('change', function () {
+      var d = tpl().newCard(sel.value);
+      Object.keys(d).forEach(function (k) {
+        if (k !== 'id' && k !== 'type' && !(k in card)) card[k] = d[k];
+      });
+      card.type = sel.value;
+      onStructureChange();
+    });
+    body.appendChild(fType);
+
+    // 欄位（依模板 schema）
+    tpl().fields(card.type).forEach(function (spec) {
+      if (spec.kind === 'image') body.appendChild(imageField(card, spec));
+      else body.appendChild(textField(card, spec));
+    });
+
+    // 工具列
+    var tools = el('<div class="card-tools"></div>');
+    var up = el('<button class="btn ghost sm">▲ 上移</button>');
+    var down = el('<button class="btn ghost sm">▼ 下移</button>');
+    var del = el('<button class="btn danger sm">刪除此卡</button>');
+    up.disabled = i === 0;
+    down.disabled = i === total - 1;
+    up.addEventListener('click', function () { moveCard(i, -1); });
+    down.addEventListener('click', function () { moveCard(i, 1); });
+    del.addEventListener('click', function () {
+      if (total <= 1) { toast('至少要保留一張卡'); return; }
+      state.cards.splice(i, 1);
+      if (cur >= state.cards.length) cur = state.cards.length - 1;
+      onStructureChange();
+    });
+    tools.appendChild(up); tools.appendChild(down); tools.appendChild(del);
+    body.appendChild(tools);
+
+    item.appendChild(body);
+    return item;
+  }
+
+  function textField(card, spec) {
+    var f = el('<div class="field"><label>' + esc(spec.label) + '</label></div>');
+    var input = spec.kind === 'textarea'
+      ? el('<textarea rows="3"></textarea>')
+      : el('<input type="text">');
+    input.value = card[spec.key] || '';
+    input.addEventListener('input', function () {
+      card[spec.key] = input.value;
+      buildPreview();
+      var itemHead = input.closest('.card-item').querySelector('.title-preview');
+      if (itemHead) itemHead.textContent = tpl().titlePreview(card) || '（空白）';
+      save();
+    });
+    f.appendChild(input);
+    return f;
+  }
+
+  function imageField(card, spec) {
+    var f = el('<div class="field"><label>' + esc(spec.label) + '</label></div>');
+    var slot = el('<div class="photo-slot"></div>');
+    var thumb = el('<div class="photo-thumb' + (spec.imageMode === 'transparent' ? ' transparent' : '') + '">' + (card[spec.key] ? '' : '未放') + '</div>');
+    if (card[spec.key]) {
+      thumb.style.backgroundImage = 'url(' + card[spec.key] + ')';
+      thumb.style.backgroundSize = spec.imageMode === 'transparent' ? 'contain' : 'cover';
+      thumb.style.backgroundRepeat = 'no-repeat';
+      thumb.style.backgroundPosition = 'center';
+    }
+    var actions = el('<div class="photo-actions"></div>');
+    var fileBtn = el('<label class="btn ghost sm btn-file">' + (card[spec.key] ? '更換' : '上傳') + '<input type="file" accept="image/*"></label>');
+    var fileInput = fileBtn.querySelector('input');
+
+    // 去背選項（僅透明圖模式）：白底商品照可一鍵去背
+    var cutChk = null;
+    if (spec.imageMode === 'transparent') {
+      var cutWrap = el('<label class="cut-opt"><input type="checkbox" checked> 上傳時自動去背（白底）</label>');
+      cutChk = cutWrap.querySelector('input');
+      actions.appendChild(fileBtn);
+      actions.appendChild(cutWrap);
+    } else {
+      actions.appendChild(fileBtn);
+    }
+
+    fileInput.addEventListener('change', function () {
+      var fl = fileInput.files && fileInput.files[0];
+      if (!fl) return;
+      thumb.textContent = '處理中…';
+      var job;
+      if (spec.imageMode === 'transparent') {
+        job = (cutChk && cutChk.checked) ? window.removeSolidBg(fl, { maxDim: 1000 }) : window.fitPhoto(fl, 1000);
+      } else {
+        job = window.cropPhoto(fl, 0.10);
+      }
+      job.then(function (dataURL) {
+        card[spec.key] = dataURL;
+        buildEditor(); buildPreview(); save();
+        toast(spec.imageMode === 'transparent'
+          ? ((cutChk && cutChk.checked) ? '已去背並放入' : '去背圖已放入')
+          : '照片已裁成 1080×1350');
+      }).catch(function () { thumb.textContent = '失敗'; toast('圖片處理失敗'); });
+      fileInput.value = '';
+    });
+    if (card[spec.key]) {
+      var rm = el('<button class="btn danger sm">移除</button>');
+      rm.addEventListener('click', function () {
+        card[spec.key] = ''; buildEditor(); buildPreview(); save();
+      });
+      actions.appendChild(rm);
+    }
+    slot.appendChild(thumb); slot.appendChild(actions);
+    f.appendChild(slot);
+    return f;
+  }
+
+  function moveCard(i, dir) {
+    var j = i + dir;
+    if (j < 0 || j >= state.cards.length) return;
+    var tmp = state.cards[i]; state.cards[i] = state.cards[j]; state.cards[j] = tmp;
+    cur = j; onStructureChange();
+  }
+
+  function onStructureChange() { buildEditor(); buildPreview(); save(); }
+
+  // ================================================================
+  //  預覽區
+  // ================================================================
+  function buildPreview() {
+    tplStyle.textContent = tpl().css;
+
+    var total = state.cards.length;
+    if (cur >= total) cur = total - 1;
+    if (cur < 0) cur = 0;
+
+    var stage = $('stage');
+    stage.innerHTML = state.cards
+      .map(function (c, i) { return tpl().render(c, i, total, state.settings, i === cur); })
+      .join('');
+
+    var dots = $('dots');
+    dots.innerHTML = '';
+    state.cards.forEach(function (_, i) {
+      var d = el('<div class="dot ' + (i === cur ? 'on' : '') + '"></div>');
+      d.addEventListener('click', function () { showCard(i); });
+      dots.appendChild(d);
+    });
+
+    $('capPreview').textContent = state.caption || '';
+    fit();
+  }
+
+  function showCard(i) {
+    var total = state.cards.length;
+    cur = (i + total) % total;
+    document.querySelectorAll('#stage .slide').forEach(function (c, k) { c.classList.toggle('on', k === cur); });
+    document.querySelectorAll('#dots .dot').forEach(function (d, k) { d.classList.toggle('on', k === cur); });
+    document.querySelectorAll('#cardList .card-item').forEach(function (it, k) { it.classList.toggle('active', k === cur); });
+  }
+
+  function fit() {
+    var wrap = document.querySelector('.stage-wrap');
+    var box = $('stageBox'), stage = $('stage');
+    var avail = Math.min(wrap.clientWidth, 560);
+    var s = Math.min(avail / 1080, (window.innerHeight * 0.66) / 1350);
+    stage.style.transform = 'scale(' + s + ')';
+    box.style.width = 1080 * s + 'px';
+    box.style.height = 1350 * s + 'px';
+  }
+  window.addEventListener('resize', fit);
+
+  // ================================================================
+  //  下載 PNG
+  // ================================================================
+  function downloadCard(index) {
+    var cardEl = document.querySelectorAll('#stage .slide')[index];
+    if (!cardEl) return Promise.resolve();
+    var seed = (state.settings.account || state.settings.signature || 'hanna').replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
+    var name = seed + '_' + String(index + 1).padStart(2, '0') + '.png';
+    var bg = tpl().bg || '#000';
+    var ready = document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve();
+    return ready.then(function () {
+      var clone = cardEl.cloneNode(true);
+      Object.assign(clone.style, { position: 'fixed', left: '-9999px', top: '0', transform: 'none', display: 'block' });
+      document.body.appendChild(clone);
+      return window.html2canvas(clone, { scale: 1, backgroundColor: bg, useCORS: true, logging: false })
+        .then(function (canvas) {
+          document.body.removeChild(clone);
+          return new Promise(function (res) {
+            canvas.toBlob(function (b) {
+              var a = document.createElement('a');
+              a.href = URL.createObjectURL(b); a.download = name; a.click();
+              URL.revokeObjectURL(a.href); res();
+            }, 'image/png');
+          });
+        });
+    });
+  }
+
+  function exportHTML() {
+    var html = window.buildStandaloneHTML(state);
+    var seed = (state.settings.account || state.settings.signature || 'hanna').replace(/[^a-zA-Z0-9_]/g, '') || 'hanna';
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = seed + '_' + state.template + '_carousel.html';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    toast('已匯出獨立 HTML');
+  }
+
+  // ================================================================
+  //  事件
+  // ================================================================
+  function bind() {
+    $('setCaption').addEventListener('input', function () {
+      state.caption = this.value; $('capPreview').textContent = this.value; save();
+    });
+    $('btnFillHashtag').addEventListener('click', function () {
+      var tag = (state.settings.hashtag || '').trim();
+      if (!tag) { toast('先在全域設定填主題 Hashtag'); return; }
+      var cap = (state.caption || '').replace(/\s*$/, '');
+      if (!new RegExp(tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*$').test(cap)) {
+        cap += '\n\n' + tag;
+      }
+      state.caption = cap; $('setCaption').value = cap; $('capPreview').textContent = cap; save();
+    });
+
+    $('pvPrev').addEventListener('click', function () { showCard(cur - 1); });
+    $('pvNext').addEventListener('click', function () { showCard(cur + 1); });
+    window.addEventListener('keydown', function (e) {
+      if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+      if (e.key === 'ArrowLeft') showCard(cur - 1);
+      if (e.key === 'ArrowRight') showCard(cur + 1);
+    });
+
+    $('dlOne').addEventListener('click', function () { toast('產生 PNG 中…'); downloadCard(cur); });
+    $('dlAll').addEventListener('click', function () {
+      toast('產生全部 PNG 中…');
+      var p = Promise.resolve();
+      state.cards.forEach(function (_, i) { p = p.then(function () { return downloadCard(i); }); });
+    });
+    $('copyCap').addEventListener('click', function () {
+      navigator.clipboard.writeText(state.caption || '').then(
+        function () { toast('Caption 已複製'); },
+        function () { toast('複製失敗，請手動選取'); }
+      );
+    });
+
+    $('btnExport').addEventListener('click', exportHTML);
+    $('btnReset').addEventListener('click', function () {
+      if (!confirm('確定要清空「' + tpl().name + '」的內容、恢復預設範例嗎？')) return;
+      state = presetState(state.template) || window.TEMPLATES[state.template].defaultState();
+      cur = 0; openId = state.cards[0].id;
+      buildAll(); toast('已重設此模板');
+    });
+  }
+
+  function buildAll() { buildEditor(); buildPreview(); }
+
+  // ── 啟動 ──
+  buildTemplateSelect();
+  buildAll();
+  bind();
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+})();
+
+</script>
+</body>
+</html>
